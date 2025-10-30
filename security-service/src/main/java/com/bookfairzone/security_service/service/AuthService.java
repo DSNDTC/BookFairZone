@@ -2,6 +2,8 @@
 package com.bookfairzone.security_service.service;
 
 
+import com.bookfairzone.security_service.dto.LoginRequest;
+import com.bookfairzone.security_service.dto.LoginResponse;
 import com.bookfairzone.security_service.dto.RegisterRequest;
 import com.bookfairzone.security_service.dto.RegisterResponse;
 import com.bookfairzone.security_service.entity.User;
@@ -9,7 +11,9 @@ import com.bookfairzone.security_service.entity.VerificationToken;
 import com.bookfairzone.security_service.enums.AccountStatus;
 import com.bookfairzone.security_service.repository.UserRepository;
 import com.bookfairzone.security_service.repository.VerificationTokenRepository;
+import com.bookfairzone.security_service.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,10 +24,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
 
+    @Autowired
     private final UserRepository userRepository;
+    @Autowired
     private final PasswordEncoder passwordEncoder;
+    @Autowired
     private final VerificationTokenRepository tokenRepository;
+    @Autowired
     private final EmailService emailService;
+    @Autowired
+    private final JwtUtil jwtUtil;
 
 
     public RegisterResponse register(RegisterRequest request) {
@@ -85,6 +95,63 @@ public class AuthService {
         tokenRepository.delete(verificationToken);
 
         return "Email verified successfully";
+    }
+
+
+    public LoginResponse login(LoginRequest request) {
+        // Find user
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+
+        // Verify password
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            incrementFailedAttempts(user);
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        // Check account status
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new RuntimeException("Account not verified or is suspended");
+        }
+
+        // Reset failed attempts
+        resetFailedAttempts(user);
+
+        // Check MFA
+        if (user.getMfaEnabled()) {
+            return LoginResponse.builder()
+                    .mfaRequired(true)
+                    .build();
+        }
+
+        // Generate tokens
+        String accessToken = jwtUtil.generateAccessToken(user);
+        String refreshToken = jwtUtil.generateRefreshToken(user);
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(900) // 15 minutes in seconds
+                .mfaRequired(false)
+                .build();
+    }
+
+    private void incrementFailedAttempts(User user) {
+        user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
+        user.setLastFailedLogin(LocalDateTime.now());
+
+        if (user.getFailedLoginAttempts() >= 5) {
+            user.setAccountStatus(AccountStatus.LOCKED);
+        }
+
+        userRepository.save(user);
+    }
+
+    private void resetFailedAttempts(User user) {
+        user.setFailedLoginAttempts(0);
+        user.setLastFailedLogin(null);
+        userRepository.save(user);
     }
 
 }

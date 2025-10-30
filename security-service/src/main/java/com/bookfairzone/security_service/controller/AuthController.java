@@ -1,5 +1,7 @@
 package com.bookfairzone.security_service.controller;
 
+import com.bookfairzone.security_service.dto.LoginRequest;
+import com.bookfairzone.security_service.dto.LoginResponse;
 import com.bookfairzone.security_service.dto.RegisterRequest;
 import com.bookfairzone.security_service.dto.RegisterResponse;
 import com.bookfairzone.security_service.service.AuthService;
@@ -27,6 +29,12 @@ public class AuthController {
     public ResponseEntity<String> verifyEmail(@RequestParam String token) {
         String message = authService.verifyEmail(token);
         return ResponseEntity.ok(message);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 
 }
