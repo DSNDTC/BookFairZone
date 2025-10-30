@@ -1,9 +1,6 @@
 package com.bookfairzone.security_service.controller;
 
-import com.bookfairzone.security_service.dto.LoginRequest;
-import com.bookfairzone.security_service.dto.LoginResponse;
-import com.bookfairzone.security_service.dto.RegisterRequest;
-import com.bookfairzone.security_service.dto.RegisterResponse;
+import com.bookfairzone.security_service.dto.*;
 import com.bookfairzone.security_service.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +31,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        LoginResponse response = authService.refreshAccessToken(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }
 

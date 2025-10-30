@@ -154,4 +154,29 @@ public class AuthService {
         userRepository.save(user);
     }
 
+
+    public LoginResponse refreshAccessToken(String refreshToken) {
+        if (!jwtUtil.isTokenValid(refreshToken)) {
+            throw new RuntimeException("Invalid or expired refresh token");
+        }
+
+        String email = jwtUtil.extractEmail(refreshToken);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new RuntimeException("Account is not active");
+        }
+
+        String newAccessToken = jwtUtil.generateAccessToken(user);
+
+        return LoginResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken) // Keep same refresh token
+                .tokenType("Bearer")
+                .expiresIn(900)
+                .mfaRequired(false)
+                .build();
+    }
+
 }
