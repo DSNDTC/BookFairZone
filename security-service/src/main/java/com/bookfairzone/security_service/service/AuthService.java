@@ -23,6 +23,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final VerificationTokenRepository tokenRepository;
+    private final EmailService emailService;
+
 
     public RegisterResponse register(RegisterRequest request) {
         // Validate email not exists
@@ -43,12 +45,14 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
         String token = generateVerificationToken(savedUser);
+        emailService.sendVerificationEmail(savedUser.getEmail(), token);
+
 
         return RegisterResponse.builder()
                 .userId(savedUser.getUserId())
                 .email(savedUser.getEmail())
                 .role(savedUser.getRole())
-                .message("User registered. Verification token: " + token)
+                .message("Registration successful. Check your email for verification link.")
                 .build();
     }
 
@@ -65,4 +69,22 @@ public class AuthService {
 
         return token;
     }
+
+    public String verifyEmail(String token) {
+        VerificationToken verificationToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token expired");
+        }
+
+        User user = verificationToken.getUser();
+        user.setAccountStatus(AccountStatus.ACTIVE);
+        userRepository.save(user);
+
+        tokenRepository.delete(verificationToken);
+
+        return "Email verified successfully";
+    }
+
 }
