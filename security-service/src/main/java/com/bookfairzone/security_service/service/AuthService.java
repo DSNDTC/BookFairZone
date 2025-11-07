@@ -2,13 +2,14 @@
 package com.bookfairzone.security_service.service;
 
 
-import com.bookfairzone.security_service.dto.LoginRequest;
-import com.bookfairzone.security_service.dto.LoginResponse;
-import com.bookfairzone.security_service.dto.RegisterRequest;
-import com.bookfairzone.security_service.dto.RegisterResponse;
+import com.bookfairzone.security_service.dto.*;
+import com.bookfairzone.security_service.entity.BlacklistedToken;
+import com.bookfairzone.security_service.entity.PasswordResetToken;
 import com.bookfairzone.security_service.entity.User;
 import com.bookfairzone.security_service.entity.VerificationToken;
 import com.bookfairzone.security_service.enums.AccountStatus;
+import com.bookfairzone.security_service.repository.BlacklistedTokenRepository;
+import com.bookfairzone.security_service.repository.PasswordResetTokenRepository;
 import com.bookfairzone.security_service.repository.UserRepository;
 import com.bookfairzone.security_service.repository.VerificationTokenRepository;
 import com.bookfairzone.security_service.security.JwtUtil;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -34,6 +36,9 @@ public class AuthService {
     private final EmailService emailService;
     @Autowired
     private final JwtUtil jwtUtil;
+
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final BlacklistedTokenRepository blacklistedTokenRepository;
 
 
     public RegisterResponse register(RegisterRequest request) {
@@ -160,6 +165,11 @@ public class AuthService {
             throw new RuntimeException("Invalid or expired refresh token");
         }
 
+        // Check if token is blacklisted
+        if (isTokenBlacklisted(refreshToken)) {
+            throw new RuntimeException("Token has been revoked");
+        }
+
         String email = jwtUtil.extractEmail(refreshToken);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -178,5 +188,88 @@ public class AuthService {
                 .mfaRequired(false)
                 .build();
     }
+
+
+    @Transactional
+    public String logout(String token) {
+        if (token == null || token.isEmpty()) {
+            throw new RuntimeException("Token is required");
+        }
+
+        if (!jwtUtil.isTokenValid(token)) {
+            throw new RuntimeException("Invalid token");
+        }
+
+        // Add token to blacklist
+        LocalDateTime expiryDate = LocalDateTime.now().plusDays(7); // Match refresh token expiry
+
+        BlacklistedToken blacklistedToken = BlacklistedToken.builder()
+                .token(token)
+                .expiryDate(expiryDate)
+                .build();
+
+        blacklistedTokenRepository.save(blacklistedToken);
+
+        return "Logged out successfully";
+    }
+
+    public boolean isTokenBlacklisted(String token) {
+        return blacklistedTokenRepository.findByToken(token).isPresent();
+    }
+
+
+    // ========== PASSWORD RESET FUNCTIONALITY ==========
+
+    @Transactional
+    public String forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new RuntimeException("Account is not active");
+        }
+
+        // Generate reset token
+        String token = UUID.randomUUID().toString();
+
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(token)
+                .user(user)
+                .expiryDate(LocalDateTime.now().plusHours(1)) // 1 hour expiry
+                .used(false)
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+
+        // Send reset email
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+
+        return "Password reset link sent to your email";
+    }
+
+    @Transactional
+    public String resetPassword(ResetPasswordRequest request) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new RuntimeException("Invalid reset token"));
+
+        if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Reset token expired");
+        }
+
+        if (resetToken.getUsed()) {
+            throw new RuntimeException("Reset token already used");
+        }
+
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Mark token as used
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+
+        return "Password reset successfully";
+    }
+
 
 }

@@ -39,5 +39,27 @@ public class AuthController {
         LoginResponse response = authService.refreshAccessToken(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body("Invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        String message = authService.logout(token);
+        return ResponseEntity.ok(message);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        String message = authService.forgotPassword(request);
+        return ResponseEntity.ok(message);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        String message = authService.resetPassword(request);
+        return ResponseEntity.ok(message);
+    }
 
 }
