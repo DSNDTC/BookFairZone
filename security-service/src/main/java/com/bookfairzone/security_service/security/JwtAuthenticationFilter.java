@@ -2,6 +2,8 @@ package com.bookfairzone.security_service.security;
 
 import com.bookfairzone.security_service.entity.User;
 import com.bookfairzone.security_service.repository.UserRepository;
+import com.bookfairzone.security_service.service.AuthService;
+import com.bookfairzone.security_service.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,11 +24,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException, ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
@@ -39,17 +43,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             if (jwtUtil.isTokenValid(token)) {
+                if (tokenBlacklistService.isBlacklisted(token)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 String email = jwtUtil.extractEmail(token);
                 User user = userRepository.findByEmail(email).orElseThrow();
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(user, null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+                        new UsernamePasswordAuthenticationToken(
+                                user, null,
+                                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                        );
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
-            // Token invalid
+            // log token issues silently
         }
 
         filterChain.doFilter(request, response);
