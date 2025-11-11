@@ -1,4 +1,4 @@
-package com.bookfair.user_service.Repo;
+package com.bookfair.user_service.repository;
 
 import com.bookfair.user_service.model.dto.User;
 import org.springframework.data.jpa.repository.JpaRepository;
