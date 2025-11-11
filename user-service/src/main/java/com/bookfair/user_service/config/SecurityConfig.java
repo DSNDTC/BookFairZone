@@ -18,10 +18,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // Disable CSRF for POST/PUT/DELETE requests in a stateless API like this
             .csrf(csrf -> csrf.disable())
 
-            // Configure request authorization
             .authorizeHttpRequests(auth -> auth
                 // Allow /api/health to be publicly accessible
                 .requestMatchers("/api/health").permitAll()
@@ -36,14 +34,13 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 2. Define the In-Memory User (Reads credentials from application.properties)
-    // NOTE: This overrides the simple properties, but ensures the user is defined correctly.
+    // 2. Define the In-Memory User
     @Bean
     public InMemoryUserDetailsManager userDetailsService() {
         UserDetails user = User.withDefaultPasswordEncoder()
             .username("admin")
             .password("admin")
-            .roles("USER") // Assign a role
+            .roles("USER")
             .build();
         return new InMemoryUserDetailsManager(user);
     }
