@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: user-postgres-db
+    environment: 
+      POSTGRES_USER: bookfair_user
+      POSTGRES_PASSWORD: user
+      POSTGRES_DB: userdb
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+  user-service-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: user-service-container
+    ports:   
+      - "8085:8085"
+    depends_on:
+      - postgres-db 
+    environment:
+      
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/userdb
+    
+    # restart: on-failure
+
