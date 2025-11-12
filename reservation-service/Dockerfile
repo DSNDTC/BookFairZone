@@ -4,9 +4,10 @@ FROM gradle:8.4.0-jdk21 AS builder
 WORKDIR /workspace
 
 # Copy ALL necessary Gradle files
-COPY gradlew /workspace/
-COPY gradle/ /workspace/gradle/
-COPY settings.gradle /workspace/
+# Copy files from the 'reservation-service' directory
+COPY reservation-service/gradlew /workspace/
+COPY reservation-service/gradle/ /workspace/gradle/
+COPY reservation-service/settings.gradle /workspace/
 
 # Copy the source code for the modules we need
 # We need both the app and its library dependency
