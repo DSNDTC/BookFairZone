@@ -1,0 +1,9 @@
+rootProject.name = 'bookfair-zone'
+
+include 'api-gateway'
+include 'email-service'
+include 'security-service'
+include 'stall-service'
+include 'bookfair-contracts'
+include 'reservation-service'
+include 'user-service'

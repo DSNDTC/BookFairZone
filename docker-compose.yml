@@ -27,33 +27,33 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  reservation-service:
-    # Build the Dockerfile located in the ./reservation-service directory
-    build:
-      context: .
-      dockerfile: ./reservation-service/Dockerfile
-    container_name: reservation-service
-    ports:
-      # Maps your host port 8085 to the container's port 8085
-      - "8085:8085"
-    depends_on:
-      kafka:
-        condition: service_started
-    environment:
-      # This OVERRIDES the value in application.properties
-      # It correctly points to the internal Kafka listener
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      # Your application properties
-      SERVER_PORT: 8085
-      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
-      # Placeholders for your API keys
-      SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
-      SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
+  # reservation-service:
+  #   # Build the Dockerfile located in the ./reservation-service directory
+  #   build:
+  #     context: .
+  #     dockerfile: ./reservation-service/Dockerfile
+  #   container_name: reservation-service
+  #   ports:
+  #     # Maps your host port 8085 to the container's port 8085
+  #     - "8085:8085"
+  #   depends_on:
+  #     kafka:
+  #       condition: service_started
+  #   environment:
+  #     # This OVERRIDES the value in application.properties
+  #     # It correctly points to the internal Kafka listener
+  #     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  #     # Your application properties
+  #     SERVER_PORT: 8085
+  #     SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
+  #     # Placeholders for your API keys
+  #     SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
+  #     SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
 
   email-service:
     build:
       context: .
-      dockerfile: ./email-service/Dockerfile
+      dockerfile: email-service/Dockerfile
     container_name: email-service
     ports:
       - "8081:8081"
@@ -71,7 +71,7 @@ services:
   notification-service:
     build:
       context: .
-      dockerfile: ./notification-service/Dockerfile
+      dockerfile: notification-service/Dockerfile
     container_name: notification-service
     ports:
       # Maps your host port 8083 to the container's port 8083
