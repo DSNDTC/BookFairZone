@@ -1,7 +1,11 @@
 package com.bookfair.stallservice.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "stalls")
@@ -36,4 +40,10 @@ public class Stall {
 
     @Column(name = "location_y")
     private Integer locationY;
+
+    // One stall can have many genres
+    @OneToMany(mappedBy = "stall", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @Builder.Default
+    private List<Genre> genres = new ArrayList<>();
 }
