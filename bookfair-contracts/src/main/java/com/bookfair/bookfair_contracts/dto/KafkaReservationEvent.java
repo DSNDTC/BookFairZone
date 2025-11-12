@@ -17,7 +17,7 @@ public class KafkaReservationEvent {
     private UUID userId;
     private String userEmail;
     private Long reservationId;
-    private String stallCode;
+    private Long stallId;
     private String message;
     private String status;
 }

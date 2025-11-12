@@ -32,9 +32,8 @@ repositories {
 }
 
 dependencies {
-	implementation project(':bookfair-contracts')
+	
     implementation 'com.google.cloud:spring-cloud-gcp-starter-sql-postgresql'
-
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
@@ -49,6 +48,7 @@ dependencies {
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation project(':bookfair-contracts')
 }
 
 tasks.named('test') {

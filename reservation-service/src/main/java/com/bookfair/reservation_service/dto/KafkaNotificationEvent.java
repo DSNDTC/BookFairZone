@@ -17,5 +17,5 @@ public class KafkaNotificationEvent {
     private UUID userId;
     private String userEmail;
     private Long reservationId;
-    private String stallCode;
+    private Long stallCode;
 }

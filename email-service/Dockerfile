@@ -5,14 +5,12 @@ FROM gradle:8.4.0-jdk21 AS contracts-builder
 
 WORKDIR /workspace
 
-# --- THIS IS THE FIX ---
 # Copy ALL necessary Gradle files from the root context
 COPY gradlew /workspace/
 COPY gradle/ /workspace/gradle/
 COPY settings.gradle /workspace/
 # Copy only the module we need to build
 COPY bookfair-contracts/ /workspace/bookfair-contracts/
-# --- END FIX ---
 
 # Make the gradlew script (now at /workspace/gradlew) executable
 RUN chmod +x ./gradlew
@@ -33,7 +31,6 @@ WORKDIR /app
 COPY --from=contracts-builder /home/gradle/.m2 /root/.m2
 
 # 2. Copy the email-service pom and download dependencies
-#    (This will now find bookfair-contracts in the copied .m2 repo)
 COPY email-service/pom.xml ./pom.xml
 RUN mvn dependency:go-offline -B
 
