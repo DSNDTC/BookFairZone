@@ -35,7 +35,7 @@ services:
       # Set environment variables for the database
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: myappdb
+      POSTGRES_DB: reservationdb
     ports:
       # Map port 5432 on your host to 5432 in the container
       # This allows your app (even outside Docker) to connect via localhost:5432
@@ -70,10 +70,10 @@ services:
       # Placeholders for your API keys
       SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
       SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
-      DATABASE_URL: "postgresql://myuser:mysecretpassword@db:5432/myappdb"
+      DATABASE_URL: "postgresql://myuser:mysecretpassword@db:5432/reservationdb"
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: myappdb
+      DB_NAME: reservationdb
       DB_USER: myuser
       DB_PASSWORD: mysecretpassword
     networks:
@@ -135,6 +135,22 @@ services:
         # This is now on a single line to avoid shell errors
         kafka-console-consumer --bootstrap-server kafka:29092 --topic reservation.confirmed.events --from-beginning
       "
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+      - zookeeper
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - app-network
+
   # Define the network for services to communicate
 networks:
   app-network:
