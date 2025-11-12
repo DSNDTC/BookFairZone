@@ -88,51 +88,56 @@ services:
       - app-network
 
 
-  email-service:
-    build:
-      context: .
-      dockerfile: email-service/Dockerfile
-    container_name: email-service
-    ports:
-      - "8081:8081"
-    depends_on:
-      kafka:
-        condition: service_started
-    environment:
-      # This OVERRIDES the value in application.properties
-      # It correctly points to the internal Kafka listener
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      # Your application properties
-      SERVER_PORT: 8081
-      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
+  # email-service:
+  #   build:
+  #     context: .
+  #     dockerfile: email-service/Dockerfile
+  #   container_name: email-service
+  #   ports:
+  #     - "8081:8081"
+  #   depends_on:
+  #     kafka:
+  #       condition: service_started
+  #   environment:
+  #     # This OVERRIDES the value in application.properties
+  #     # It correctly points to the internal Kafka listener
+  #     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  #     # Your application properties
+  #     SERVER_PORT: 8081
+  #     SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
+  #   networks:
+  #     - app-network
 
-  notification-service:
-    build:
-      context: .
-      dockerfile: notification-service/Dockerfile
-    container_name: notification-service
-    ports:
-      # Maps your host port 8083 to the container's port 8083
-      - "8083:8083"
-    depends_on:
-      kafka:
-        condition: service_started
-    environment:
-      # This OVERRIDES the value in application.properties
-      # It correctly points to the internal Kafka listener
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      # Your application properties
-      SERVER_PORT: 8083
-      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
-      # Placeholders for your API keys
-      SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
-      SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
+  # notification-service:
+  #   build:
+  #     context: .
+  #     dockerfile: notification-service/Dockerfile
+  #   container_name: notification-service
+  #   ports:
+  #     # Maps your host port 8083 to the container's port 8083
+  #     - "8083:8083"
+  #   depends_on:
+  #     kafka:
+  #       condition: service_started
+  #   environment:
+  #     # This OVERRIDES the value in application.properties
+  #     # It correctly points to the internal Kafka listener
+  #     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  #     # Your application properties
+  #     SERVER_PORT: 8083
+  #     SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
+  #     # Placeholders for your API keys
+  #     SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
+  #     SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
+  #   networks:
+  #     - app-network
 
   kafka-consumer:
     image: confluentinc/cp-kafka:7.3.0
     container_name: kafka-consumer
     depends_on:
       - kafka
+      - reservation-service
     # This command block is now corrected
     command: >
       sh -c "
