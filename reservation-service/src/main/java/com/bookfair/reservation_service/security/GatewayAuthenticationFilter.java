@@ -17,6 +17,13 @@ import java.util.List;
 public class GatewayAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        // Skip filtering for actuator endpoints (health checks, etc.)
+        return uri != null && (uri.equals("/actuator") || uri.startsWith("/actuator/"));
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)

@@ -26,6 +26,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                // Allow actuator endpoints for Docker healthcheck and observability
+                .requestMatchers("/actuator/**").permitAll()
+                        
                         // VENDORS (USER_ROLE) create reservations
                         .requestMatchers(HttpMethod.POST, "/api/reservations").hasAuthority("USER_ROLE")
                         .requestMatchers(HttpMethod.GET, "/api/reservations/my-reservations").hasAuthority("USER_ROLE")
