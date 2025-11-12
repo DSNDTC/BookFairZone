@@ -1,68 +1,152 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    /* Literary Institution Color Palette - Navy & Emerald */
+    --background: 210 40% 98%;
+    --foreground: 215 25% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 20%;
+
+    /* Deep navy - prestigious library */
+    --primary: 215 60% 25%;
+    --primary-foreground: 210 40% 98%;
+    --primary-hover: 215 70% 20%;
+
+    /* Light blue-gray */
+    --secondary: 210 30% 92%;
+    --secondary-foreground: 215 25% 20%;
+
+    /* Emerald accent */
+    --accent: 160 70% 40%;
+    --accent-foreground: 210 40% 98%;
+
+    --muted: 210 20% 88%;
+    --muted-foreground: 215 15% 45%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 25% 82%;
+    --input: 210 25% 82%;
+    --ring: 215 60% 25%;
+
+    --radius: 0.5rem;
+    
+    /* Custom tokens for literary design */
+    --navy: 215 60% 25%;
+    --navy-light: 215 50% 40%;
+    --navy-dark: 215 70% 15%;
+    --emerald: 160 70% 40%;
+    --emerald-light: 160 60% 55%;
+    --emerald-dark: 160 80% 30%;
+    --bronze: 30 60% 50%;
+    --bronze-light: 30 70% 65%;
+    --bronze-dark: 30 70% 40%;
+    --ivory: 40 30% 95%;
+    --slate: 215 20% 30%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(215 60% 25%), hsl(215 50% 40%));
+    --gradient-emerald: linear-gradient(135deg, hsl(160 70% 40%), hsl(160 60% 55%));
+    --gradient-bronze: linear-gradient(135deg, hsl(30 60% 50%), hsl(30 70% 65%));
+    --gradient-elegant: linear-gradient(180deg, hsl(210 40% 98%), hsl(210 30% 92%));
+    
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(215 60% 25% / 0.3);
+    --shadow-emerald: 0 8px 25px -8px hsl(160 70% 40% / 0.4);
+    --shadow-book: 0 4px 20px hsl(215 60% 25% / 0.2);
+    
+    /* Animations */
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-book: all 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  a:hover {
-    color: #747bff;
+
+  .dark {
+    --background: 215 40% 10%;
+    --foreground: 210 30% 92%;
+
+    --card: 215 35% 12%;
+    --card-foreground: 210 30% 92%;
+
+    --popover: 215 35% 12%;
+    --popover-foreground: 210 30% 92%;
+
+    --primary: 215 60% 45%;
+    --primary-foreground: 210 40% 98%;
+    --primary-hover: 215 70% 50%;
+
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 210 30% 92%;
+
+    --accent: 160 70% 50%;
+    --accent-foreground: 215 40% 10%;
+
+    --muted: 215 20% 18%;
+    --muted-foreground: 210 15% 60%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 20% 22%;
+    --input: 215 20% 22%;
+    --ring: 215 60% 45%;
+    
+    --navy: 215 60% 45%;
+    --navy-light: 215 50% 55%;
+    --navy-dark: 215 70% 30%;
+    --emerald: 160 70% 50%;
+    --emerald-light: 160 60% 60%;
+    --emerald-dark: 160 80% 40%;
+    --bronze: 30 60% 55%;
+    --bronze-light: 30 70% 68%;
+    --bronze-dark: 30 70% 45%;
+    --ivory: 215 25% 18%;
+    --slate: 210 15% 75%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(215 60% 45%), hsl(215 50% 55%));
+    --gradient-emerald: linear-gradient(135deg, hsl(160 70% 50%), hsl(160 60% 60%));
+    --gradient-bronze: linear-gradient(135deg, hsl(30 60% 55%), hsl(30 70% 68%));
+    --gradient-elegant: linear-gradient(180deg, hsl(215 40% 10%), hsl(215 35% 12%));
+    
+    --shadow-elegant: 0 10px 30px -10px hsl(0 0% 0% / 0.5);
+    --shadow-emerald: 0 8px 25px -8px hsl(160 70% 50% / 0.3);
+    --shadow-book: 0 4px 20px hsl(0 0% 0% / 0.4);
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
   }
 }

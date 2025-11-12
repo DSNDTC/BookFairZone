@@ -1,6 +1,7 @@
 package com.bookfair.reservation_service.service;
 
-import com.bookfair.bookfair_contracts.dto.*;
+import com.bookfair.bookfair_contracts.dto.KafkaReservationEvent;
+import com.bookfair.bookfair_contracts.dto.KafkaStallUpdateEvent;
 import com.bookfair.reservation_service.dto.ReservationRequest;
 import com.bookfair.reservation_service.dto.ReservationResponse;
 import com.bookfair.reservation_service.dto.StallDto;
@@ -11,11 +12,11 @@ import com.bookfair.reservation_service.model.ReservationStatus;
 import com.bookfair.reservation_service.producer.NotificationEventProducer;
 import com.bookfair.reservation_service.producer.StallUpdateEventProducer;
 import com.bookfair.reservation_service.repository.ReservationRepository;
+import com.bookfair.reservation_service.security.GatewayUserDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -52,9 +53,9 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public ReservationResponse createReservation(ReservationRequest request, Authentication authentication) {
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        UUID userId = UUID.fromString(jwt.getClaimAsString("user_id"));
-        String email = jwt.getSubject();
+        GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
+        UUID userId = UUID.fromString(userDetails.getUserId());
+        String email = userDetails.getEmail();
 
         long activeReservations = reservationRepository.countByUserIdAndStatus(userId, ReservationStatus.CONFIRMED);
         if (activeReservations >= MAX_RESERVATIONS) {
@@ -128,8 +129,8 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public List<ReservationResponse> getMyReservations(Authentication authentication) {
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        UUID userId = UUID.fromString(jwt.getClaimAsString("user_id"));
+        GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
+        UUID userId = UUID.fromString(userDetails.getUserId());
 
         return reservationRepository.findByUserId(userId).stream()
                 .map(ReservationResponse::fromEntity)
