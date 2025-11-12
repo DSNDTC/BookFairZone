@@ -1,54 +1,63 @@
-# Multi-stage build for Order Service
-FROM maven:3.9.5-eclipse-temurin-21 AS build
+# STAGE 1: Build 'bookfair-contracts' (Gradle)
+# This stage builds the Gradle module and installs it into the container's
+# local Maven repository (/root/.m2)
+FROM gradle:8.4.0-jdk21 AS contracts-builder
 
-# Set working directory
 WORKDIR /workspace
 
-# Copy Maven files for dependency caching
-COPY pom.xml ./
-COPY mvnw ./
-COPY mvnw.cmd ./
-COPY .mvn .mvn
+# Copy ALL necessary Gradle files from the root context
+COPY gradlew /workspace/
+COPY gradle/ /workspace/gradle/
+COPY settings.gradle /workspace/
+# Copy only the module we need to build
+COPY bookfair-contracts/ /workspace/bookfair-contracts/
 
-# Make sure Maven wrapper is executable
-RUN chmod +x mvnw
+# Make the gradlew script (now at /workspace/gradlew) executable
+RUN chmod +x ./gradlew
 
-# Download dependencies first for better caching
-RUN ./mvnw dependency:go-offline -B
+# Build and publish only the 'contracts' module to the local .m2 repo
+# This task publishes to /home/gradle/.m2
+RUN ./gradlew :bookfair-contracts:publishToMavenLocal --no-daemon
 
-# Copy source code
-COPY src ./src
 
-# Build the application (skip tests for faster builds)
-RUN ./mvnw clean package -DskipTests
+# STAGE 2: Build 'email-service' (Maven)
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
-# Production stage
-FROM eclipse-temurin:21-jre-alpine
-
-# Install curl for health checks
-RUN apk add --no-cache curl
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S orderuser && adduser -u 1001 -S orderuser -G orderuser
-
-# Set working directory
 WORKDIR /app
 
-# Copy the JAR file from build stage
-COPY --from=build /workspace/target/*.jar app.jar
+# --- Process email-service ---
 
-# Change ownership to non-root user
-RUN chown orderuser:orderuser app.jar
+# 1. CRITICAL: Copy the .m2 repo from the gradle user's home
+COPY --from=contracts-builder /home/gradle/.m2 /root/.m2
 
-# Switch to non-root user
-USER orderuser
+# 2. Copy the email-service pom and download dependencies
+COPY email-service/pom.xml ./pom.xml
+RUN mvn dependency:go-offline -B
 
-# Expose application port
-EXPOSE 9094
+# 3. Copy its source code
+COPY email-service/src ./src
 
-# Health check
+# 4. Build and package the final application
+RUN mvn clean package -DskipTests
+
+
+# STAGE 3: Create final lightweight Java 21 runtime image
+FROM eclipse-temurin:21-jre-alpine
+
+# Install curl for HEALTHCHECK
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# This port MUST match your email-service's port
+EXPOSE 8081
+
+# Copy the built JAR from the 'builder' stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Healthcheck to see if the Spring Boot app is ready
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:9094/actuator/health || exit 1
+  CMD curl -f http://localhost:8081/actuator/health || exit 1
 
-# Run the application with Docker profile
-ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-Dspring.profiles.active=docker", "-jar", "/app/app.jar"]
+# Run the application
+ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]

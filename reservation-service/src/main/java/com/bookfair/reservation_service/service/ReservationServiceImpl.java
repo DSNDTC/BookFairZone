@@ -1,6 +1,9 @@
 package com.bookfair.reservation_service.service;
 
-import com.bookfair.reservation_service.dto.*;
+import com.bookfair.bookfair_contracts.dto.*;
+import com.bookfair.reservation_service.dto.ReservationRequest;
+import com.bookfair.reservation_service.dto.ReservationResponse;
+import com.bookfair.reservation_service.dto.StallDto;
 import com.bookfair.reservation_service.exception.ReservationException;
 import com.bookfair.reservation_service.exception.ResourceNotFoundException;
 import com.bookfair.reservation_service.model.Reservation;
@@ -91,14 +94,16 @@ public class ReservationServiceImpl implements ReservationService {
 
         StallDto stall = getStallDetails(reservation.getStallId());
 
-        KafkaStallUpdateEvent stallEvent = new KafkaStallUpdateEvent(reservation.getStallId(), true);
+        KafkaStallUpdateEvent stallEvent = new KafkaStallUpdateEvent(reservation.getStallId(), true, "Stall reserved for reservation ID " + reservationId);
         stallUpdateEventProducer.sendStallUpdateEvent(stallEvent);
 
-        KafkaNotificationEvent notificationEvent = new KafkaNotificationEvent(
+        KafkaReservationEvent notificationEvent = new KafkaReservationEvent(
                 reservation.getUserId(),
                 reservation.getUserEmail(),
                 reservation.getId(),
-                stall.getCode()
+                reservation.getStallId(),
+                "Your reservation has been confirmed.",
+                "CONFIRMED"
         );
         notificationEventProducer.sendReservationConfirmedEvent(notificationEvent);
 

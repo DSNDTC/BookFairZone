@@ -1,4 +1,4 @@
-package com.bookfair.reservation_service.dto;
+package com.bookfair.bookfair_contracts.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,9 +13,11 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class KafkaNotificationEvent {
+public class KafkaReservationEvent {
     private UUID userId;
     private String userEmail;
     private Long reservationId;
-    private Long stallCode;
+    private Long stallId;
+    private String message;
+    private String status;
 }

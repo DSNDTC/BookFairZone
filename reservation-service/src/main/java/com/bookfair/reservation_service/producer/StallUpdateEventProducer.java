@@ -1,6 +1,6 @@
 package com.bookfair.reservation_service.producer;
 
-import com.bookfair.reservation_service.dto.KafkaStallUpdateEvent;
+import com.bookfair.bookfair_contracts.dto.KafkaStallUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

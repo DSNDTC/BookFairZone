@@ -1,60 +1,43 @@
-# Multi-stage build for Order Service (Gradle)
+# STAGE 1: Build 'reservation-service' (Gradle)
+FROM gradle:8.4.0-jdk21 AS builder
 
-# Stage 1: Build
-# Use a Gradle image with JDK 21
-FROM gradle:8.4.0-jdk21 AS build
-
-# Set working directory
 WORKDIR /workspace
 
-# Copy Gradle wrapper, build script, and settings script
-# This allows downloading dependencies before copying source
-COPY build.gradle settings.gradle ./
-COPY gradlew gradlew.bat ./
-COPY gradle ./gradle
+# Copy ALL necessary Gradle files
+COPY gradlew /workspace/
+COPY gradle/ /workspace/gradle/
+COPY settings.gradle /workspace/
 
-# Make sure Gradle wrapper is executable
-RUN chmod +x gradlew
+# Copy the source code for the modules we need
+# We need both the app and its library dependency
+COPY bookfair-contracts/ /workspace/bookfair-contracts/
+COPY reservation-service/ /workspace/reservation-service/
 
-# Download dependencies first for better caching
-# Use --no-daemon to avoid a lingering daemon in the build layer
-RUN ./gradlew dependencies --no-daemon
+# Make gradlew executable
+RUN chmod +x ./gradlew
 
-# Copy the source code
-COPY src ./src
+# Build the reservation-service.
+# Gradle is smart and will build :bookfair-contracts first as a dependency.
+RUN ./gradlew :reservation-service:bootJar --no-daemon
 
-# Build the application (skip tests for faster builds)
-# The --no-daemon flag is recommended for CI/container builds
-RUN ./gradlew build --no-daemon -x test
 
-# Stage 2: Production
+# STAGE 2: Create final lightweight Java 21 runtime image
 FROM eclipse-temurin:21-jre-alpine
 
-# Install curl for health checks
+# Install curl for HEALTHCHECK
 RUN apk add --no-cache curl
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S orderuser && adduser -u 1001 -S orderuser -G orderuser
-
-# Set working directory
 WORKDIR /app
 
-# Copy the JAR file from build stage
-# Gradle builds jars in build/libs
-COPY --from=build /workspace/build/libs/*.jar app.jar
+# This port MUST match your reservation-service's port
+EXPOSE 8085
 
-# Change ownership to non-root user
-RUN chown orderuser:orderuser app.jar
+# Copy the built JAR from the 'builder' stage
+COPY --from=builder /workspace/reservation-service/build/libs/*.jar app.jar
 
-# Switch to non-root user
-USER orderuser
-
-# Expose application port
-EXPOSE 9094
-
-# Health check (same as your Maven Dockerfile)
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:9094/actuator/health || exit 1
+  CMD curl -f http://localhost:8085/actuator/health || exit 1
 
-# Run the application with Docker profile (same as your Maven Dockerfile)
-ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-Dspring.profiles.active=docker", "-jar", "/app/app.jar"]
+# Run the application
+ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]
