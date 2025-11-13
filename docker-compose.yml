@@ -157,6 +157,35 @@ services:
       start_period: 60s
       retries: 3
 
+  mysql:
+    image: mysql:8.0
+    container_name: stall_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: stall_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+
+  stall-service:
+    build:
+      context: .
+      dockerfile: ./stall-service/Dockerfile
+    container_name: stall_service
+    depends_on:
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/stall_db?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpass
+    ports:
+      - "8086:8080"
+    networks:
+      - app-network
 
 #  email-service:
 #    build:
@@ -240,3 +269,4 @@ networks:
 volumes:
   postgres_data:
     driver: local
+  mysql-data:
