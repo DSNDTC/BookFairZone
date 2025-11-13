@@ -1,4 +1,4 @@
-package com.bookfair.reservation_service.dto;
+package com.bookfair.bookfair_contracts.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,4 +14,5 @@ import lombok.NoArgsConstructor;
 public class KafkaStallUpdateEvent {
     private Long stallId;
     private Boolean isReserved;
+    private String message;
 }

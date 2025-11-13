@@ -1,5 +1,6 @@
 package com.bookfair.reservation_service.controller;
 
+import com.bookfair.bookfair_contracts.dto.KafkaReservationEvent;
 import com.bookfair.reservation_service.dto.ReservationRequest;
 import com.bookfair.reservation_service.dto.ReservationResponse;
 import com.bookfair.reservation_service.service.ReservationService;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.bookfair.reservation_service.producer.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,9 +20,11 @@ import java.util.UUID;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final NotificationEventProducer notificationEventProducer;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(ReservationService reservationService, NotificationEventProducer notificationEventProducer) {
         this.reservationService = reservationService;
+        this.notificationEventProducer = notificationEventProducer;
     }
 
     /**
@@ -32,6 +36,15 @@ public class ReservationController {
             @Valid @RequestBody ReservationRequest request,
             Authentication authentication) {
         ReservationResponse response = reservationService.createReservation(request, authentication);
+        KafkaReservationEvent event = new KafkaReservationEvent(
+                response.getUserId(),
+                response.getUserEmail(),
+                response.getId(),
+                response.getStallId(),
+                "Your reservation has been created.",
+                "CREATED"
+        );
+        notificationEventProducer.sendReservationEvent(event);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -42,6 +55,15 @@ public class ReservationController {
     @PreAuthorize("hasAuthority('ADMIN_ROLE')")
     public ResponseEntity<ReservationResponse> confirmReservation(@PathVariable("id") Long reservationId) {
         ReservationResponse response = reservationService.confirmReservation(reservationId);
+        KafkaReservationEvent event = new KafkaReservationEvent(
+                response.getUserId(),
+                response.getUserEmail(),
+                response.getId(),
+                response.getStallId(),
+                "Your reservation has been confirmed.",
+                "CONFIRMED"
+        );
+        notificationEventProducer.sendReservationEvent(event);
         return ResponseEntity.ok(response);
     }
 
