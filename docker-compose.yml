@@ -59,32 +59,24 @@ services:
   security-service:
     build:
       context: .
-      dockerfile: ./security-service/Dockerfile
+      dockerfile: security-service/Dockerfile
     container_name: security-service
-    restart: always
-    ports:
-      - "8082:8082"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+    env_file:
+      - .env
     environment:
-      SERVER_PORT: 8082
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: reservation_security
-      DB_USERNAME: myuser
-      DB_PASSWORD: mysecretpassword
-      JWT_SECRET: "e8C7y/8rYFvXokm3h4yx1NnTu7Eddk1LMZ4XscKfDcXKGuTfyDsvWgL5GqprbR8cJlI2zIZsRZbyE1zYDL4xXQ=="
-      JWT_ACCESS_TOKEN_EXPIRATION: 900000
-      JWT_REFRESH_TOKEN_EXPIRATION: 604800000
-      # Mail configuration for email verification
-      MAIL_HOST: smtp.gmail.com
-      MAIL_PORT: 587
-      MAIL_USERNAME: theshikanavod@gmail.com
-      MAIL_PASSWORD: "qqig plgf uvyc nkxo"
-      MAIL_FROM: theshikanavod@gmail.com
-    networks:
-      - app-network
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_MAIL_HOST: ${MAIL_HOST}
+      SPRING_MAIL_PORT: ${MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8082:8080"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
       interval: 30s
@@ -107,7 +99,7 @@ services:
         condition: service_healthy
     environment:
       SERVER_PORT: 8080
-      JWT_SECRET: "e8C7y/8rYFvXokm3h4yx1NnTu7Eddk1LMZ4XscKfDcXKGuTfyDsvWgL5GqprbR8cJlI2zIZsRZbyE1zYDL4xXQ=="
+      JWT_SECRET: ${JWT_SECRET}
     networks:
       - app-network
     healthcheck:
