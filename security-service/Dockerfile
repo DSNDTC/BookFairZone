@@ -3,15 +3,15 @@ FROM gradle:8.10.2-jdk21 AS builder
 WORKDIR /app
 
 # Leverage layer caching for dependencies
-COPY build.gradle settings.gradle ./
-COPY gradle gradle
+COPY security-service/build.gradle security-service/settings.gradle ./
+COPY security-service/gradle gradle
 RUN gradle --no-daemon help || true
 
 # Increase Gradle network timeouts (ms) to be resilient on slow networks
 ENV GRADLE_OPTS "-Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=60000"
 
 # Copy the rest of the source and build a fat jar
-COPY . .
+COPY security-service/ .
 RUN gradle --no-daemon clean bootJar
 
 # ---- Run stage ----
