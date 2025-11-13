@@ -62,11 +62,12 @@ services:
       dockerfile: security-service/Dockerfile
     container_name: security-service
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - .env
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_MAIL_HOST: ${MAIL_HOST}
@@ -76,9 +77,11 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8082:8080"
+    networks:
+      - app-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 60s
