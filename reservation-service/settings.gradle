@@ -1,1 +1,5 @@
 rootProject.name = 'reservation-service'
+
+// Include the bookfair-contracts library as a subproject
+include 'bookfair-contracts'
+include 'reservation-service'

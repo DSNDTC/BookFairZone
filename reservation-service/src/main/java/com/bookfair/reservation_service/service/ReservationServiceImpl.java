@@ -1,6 +1,7 @@
 package com.bookfair.reservation_service.service;
 
-import com.bookfair.bookfair_contracts.dto.*;
+import com.bookfair.bookfair_contracts.dto.KafkaReservationEvent;
+import com.bookfair.bookfair_contracts.dto.KafkaStallUpdateEvent;
 import com.bookfair.reservation_service.dto.ReservationRequest;
 import com.bookfair.reservation_service.dto.ReservationResponse;
 import com.bookfair.reservation_service.dto.StallDto;
