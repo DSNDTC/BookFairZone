@@ -103,6 +103,11 @@ services:
     environment:
       SERVER_PORT: 8080
       JWT_SECRET: ${JWT_SECRET}
+      SECURITY_SERVICE_URI: http://security-service:8080
+      SECURITY_SERVICE_ISSUER_URI: http://security-service:8080
+      RESERVATION_SERVICE_URI: http://reservation-service:8085
+      STALL_SERVICE_URI: http://stall-service:8080
+      USER_SERVICE_URI: http://user-service:8080
     networks:
       - app-network
     healthcheck:
