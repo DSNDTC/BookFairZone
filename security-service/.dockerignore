@@ -1,0 +1,17 @@
+# Ignore VCS and IDE
+.git
+.gitignore
+.idea
+
+# Gradle caches and build output
+.gradle
+build
+out
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# OS
+**/*.log
+**/.DS_Store
