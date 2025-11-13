@@ -10,6 +10,7 @@ import EmployeeLogin from "./pages/EmployeeLogin";
 import EmployeePortal from "./pages/EmployeePortal";
 import Dashboard from "./pages/Dashboard";
 import Genres from "./pages/Genres";
+import Reservations from "./pages/Reservations";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/genres" element={<Genres />} />
+          <Route path="/reservations" element={<Reservations />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
