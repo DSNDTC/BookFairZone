@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import EmployeeLogin from "./pages/EmployeeLogin";
 import EmployeePortal from "./pages/EmployeePortal";
 import Dashboard from "./pages/Dashboard";
+import Genres from "./pages/Genres";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/employee-portal" element={<EmployeePortal />} />
           <Route path="*" element={<NotFound />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/genres" element={<Genres />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
