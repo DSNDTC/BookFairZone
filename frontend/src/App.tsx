@@ -11,6 +11,7 @@ import EmployeePortal from "./pages/EmployeePortal";
 import Dashboard from "./pages/Dashboard";
 import Genres from "./pages/Genres";
 import Reservations from "./pages/Reservations";
+import StallManagement from "./pages/StallManagement";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/genres" element={<Genres />} />
           <Route path="/reservations" element={<Reservations />} />
+          <Route path="/stall-management" element={<StallManagement />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
