@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { BookOpen, Search, Users, MapPin, Calendar, TrendingUp, Filter, Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface Reservation {
   id: string;
@@ -17,11 +18,23 @@ interface Reservation {
   status: "confirmed" | "pending" | "cancelled";
 }
 
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
 
 const EmployeePortal = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: "1", title: "New Reservation", message: "ABC Publishers made a reservation", time: "10 min ago", read: false },
+    { id: "2", title: "Payment Received", message: "LKR 85,000 received from XYZ Books", time: "1 hour ago", read: false },
+    { id: "3", title: "Stall Cancelled", message: "Literary House cancelled stall C2", time: "2 hours ago", read: true },
+  ]);
 
   useEffect(() => {
     // Check if employee is authenticated
@@ -36,7 +49,13 @@ const EmployeePortal = () => {
     navigate("/employee-login");
   };
 
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+  };
 
+  const handleClearAll = () => {
+    setNotifications([]);
+  };
 
   const mockReservations: Reservation[] = [
     {
@@ -117,6 +136,11 @@ const EmployeePortal = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <NotificationBell 
+                notifications={notifications}
+                onMarkAsRead={handleMarkAsRead}
+                onClearAll={handleClearAll}
+              />
               <Link to="/stall-management">
                 <Button variant="outline" size="sm">
                   <Settings className="w-4 h-4 mr-2" />
