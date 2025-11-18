@@ -133,13 +133,10 @@ services:
       kafka:
         condition: service_started
     environment:
-      # This OVERRIDES the value in application.properties
-      # It correctly points to the internal Kafka listener
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      # Your application properties
       SERVER_PORT: 8085
       SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
-      # Placeholders for your API keys
       SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
       SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
       DATABASE_URL: "postgresql://myuser:mysecretpassword@db:5432/reservationdb"
@@ -170,6 +167,12 @@ services:
       - mysql-data:/var/lib/mysql
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   stall-service:
     build:
@@ -177,7 +180,8 @@ services:
       dockerfile: ./stall-service/Dockerfile
     container_name: stall_service
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/stall_db?useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
