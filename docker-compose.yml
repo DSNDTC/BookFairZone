@@ -52,6 +52,68 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+
+  security-service:
+    build:
+      context: .
+      dockerfile: security-service/Dockerfile
+    container_name: security-service
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_MAIL_HOST: ${MAIL_HOST}
+      SPRING_MAIL_PORT: ${MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8082:8080"
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    container_name: api-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      security-service:
+        condition: service_healthy
+      reservation-service:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET}
+      SECURITY_SERVICE_URI: http://security-service:8080
+      SECURITY_SERVICE_ISSUER_URI: http://security-service:8080
+      RESERVATION_SERVICE_URI: http://reservation-service:8085
+      STALL_SERVICE_URI: http://stall-service:8080
+      USER_SERVICE_URI: http://user-service:8080
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
 
   reservation-service:
     # Build the Dockerfile located in the ./reservation-service directory
@@ -69,13 +131,10 @@ services:
       kafka:
         condition: service_started
     environment:
-      # This OVERRIDES the value in application.properties
-      # It correctly points to the internal Kafka listener
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      # Your application properties
       SERVER_PORT: 8085
       SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
-      # Placeholders for your API keys
       SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
       SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
       DATABASE_URL: "postgresql://myuser:mysecretpassword@db:5432/reservationdb"
@@ -86,51 +145,89 @@ services:
       DB_PASSWORD: mysecretpassword
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8085/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
 
+  mysql:
+    image: mysql:8.0
+    container_name: stall_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: stall_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # email-service:
-  #   build:
-  #     context: .
-  #     dockerfile: email-service/Dockerfile
-  #   container_name: email-service
-  #   ports:
-  #     - "8081:8081"
-  #   depends_on:
-  #     kafka:
-  #       condition: service_started
-  #   environment:
-  #     # This OVERRIDES the value in application.properties
-  #     # It correctly points to the internal Kafka listener
-  #     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-  #     # Your application properties
-  #     SERVER_PORT: 8081
-  #     SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
-  #   networks:
-  #     - app-network
+  stall-service:
+    build:
+      context: .
+      dockerfile: ./stall-service/Dockerfile
+    container_name: stall_service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/stall_db?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpass
+    ports:
+      - "8086:8080"
+    networks:
+      - app-network
 
-  # notification-service:
-  #   build:
-  #     context: .
-  #     dockerfile: notification-service/Dockerfile
-  #   container_name: notification-service
-  #   ports:
-  #     # Maps your host port 8083 to the container's port 8083
-  #     - "8083:8083"
-  #   depends_on:
-  #     kafka:
-  #       condition: service_started
-  #   environment:
-  #     # This OVERRIDES the value in application.properties
-  #     # It correctly points to the internal Kafka listener
-  #     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-  #     # Your application properties
-  #     SERVER_PORT: 8083
-  #     SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
-  #     # Placeholders for your API keys
-  #     SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
-  #     SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
-  #   networks:
-  #     - app-network
+#  email-service:
+#    build:
+#      context: .
+#      dockerfile: email-service/Dockerfile
+#    container_name: email-service
+#    ports:
+#      - "8081:8081"
+#    depends_on:
+#      kafka:
+#        condition: service_started
+#    environment:
+#      # This OVERRIDES the value in application.properties
+#      # It correctly points to the internal Kafka listener
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#      # Your application properties
+#      SERVER_PORT: 8081
+#      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
+#
+#  notification-service:
+#    build:
+#      context: .
+#      dockerfile: notification-service/Dockerfile
+#    container_name: notification-service
+#    ports:
+#      # Maps your host port 8083 to the container's port 8083
+#      - "8083:8083"
+#    depends_on:
+#      kafka:
+#        condition: service_started
+#    environment:
+#      # This OVERRIDES the value in application.properties
+#      # It correctly points to the internal Kafka listener
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#      # Your application properties
+#      SERVER_PORT: 8083
+#      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
+#      # Placeholders for your API keys
+#      SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
+#      SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
 
   kafka-consumer:
     image: confluentinc/cp-kafka:7.3.0
@@ -175,3 +272,4 @@ networks:
 volumes:
   postgres_data:
     driver: local
+  mysql-data:

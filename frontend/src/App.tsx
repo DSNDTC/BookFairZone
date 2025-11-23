@@ -1,12 +1,17 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "./components/ui/toaster";
+import { Toaster as Sonner } from "./components/ui/sonner";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import EmployeeLogin from "./pages/EmployeeLogin";
+import EmployeePortal from "./pages/EmployeePortal";
+import Dashboard from "./pages/Dashboard";
+import Genres from "./pages/Genres";
+import Reservations from "./pages/Reservations";
+import StallManagement from "./pages/StallManagement";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +26,12 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/employee-login" element={<EmployeeLogin />} />
+          <Route path="/employee-portal" element={<EmployeePortal />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/genres" element={<Genres />} />
+          <Route path="/reservations" element={<Reservations />} />
+          <Route path="/stall-management" element={<StallManagement />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

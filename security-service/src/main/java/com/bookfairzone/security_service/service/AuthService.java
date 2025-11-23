@@ -8,6 +8,7 @@ import com.bookfairzone.security_service.entity.PasswordResetToken;
 import com.bookfairzone.security_service.entity.User;
 import com.bookfairzone.security_service.entity.VerificationToken;
 import com.bookfairzone.security_service.enums.AccountStatus;
+import com.bookfairzone.security_service.event.UserRegisteredEvent;
 import com.bookfairzone.security_service.repository.BlacklistedTokenRepository;
 import com.bookfairzone.security_service.repository.PasswordResetTokenRepository;
 import com.bookfairzone.security_service.repository.UserRepository;
@@ -36,11 +37,14 @@ public class AuthService {
     private final EmailService emailService;
     @Autowired
     private final JwtUtil jwtUtil;
+    @Autowired
+    private final UserEventPublisher userEventPublisher; // NEW
 
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final BlacklistedTokenRepository blacklistedTokenRepository;
 
 
+    @Transactional
     public RegisterResponse register(RegisterRequest request) {
         // Validate email not exists
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -62,6 +66,8 @@ public class AuthService {
         String token = generateVerificationToken(savedUser);
         emailService.sendVerificationEmail(savedUser.getEmail(), token);
 
+        // Publish event to Kafka for User Service
+        publishUserRegisteredEvent(savedUser);
 
         return RegisterResponse.builder()
                 .userId(savedUser.getUserId())
@@ -69,6 +75,19 @@ public class AuthService {
                 .role(savedUser.getRole())
                 .message("Registration successful. Check your email for verification link.")
                 .build();
+    }
+
+    private void publishUserRegisteredEvent(User user) {
+        UserRegisteredEvent event = UserRegisteredEvent.builder()
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .registeredAt(user.getCreatedAt())
+                .eventId(UUID.randomUUID().toString())
+                .eventType("USER_REGISTERED")
+                .build();
+
+        userEventPublisher.publishUserRegisteredEvent(event);
     }
 
     private String generateVerificationToken(User user) {

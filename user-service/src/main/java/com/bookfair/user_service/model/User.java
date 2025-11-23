@@ -1,4 +1,4 @@
-package com.bookfair.user_service.model.dto;
+package com.bookfair.user_service.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
