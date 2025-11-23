@@ -20,9 +20,9 @@ public class UserEventListener {
     private final UserService userService;
 
     @KafkaListener(
-            topics = "${spring.kafka.topic.user-registered:user.registered.events}",
-            groupId = "${spring.kafka.consumer.group-id:user-service-group}",
-            containerFactory = "kafkaListenerContainerFactory"
+        topics = "${spring.kafka.topic.user-registered:user.registered.events}",
+        groupId = "${spring.kafka.consumer.group-id:user-service-group}",
+        containerFactory = "kafkaListenerContainerFactory"
     )
     public void handleUserRegisteredEvent(
             @Payload UserRegisteredEvent event,
@@ -38,6 +38,9 @@ public class UserEventListener {
             log.info("EventId: {}", event.getEventId());
             log.info("UserId: {}", event.getUserId());
             log.info("Email: {}", event.getEmail());
+            log.info("Name: {}", event.getName());
+            log.info("Business Name: {}", event.getBusinessName());
+            log.info("Phone: {}", event.getPhoneNumber());
             log.info("Role: {}", event.getRole());
             log.info("========================================");
 
@@ -51,15 +54,20 @@ public class UserEventListener {
             // Create user from event
             User user = new User();
             user.setEmail(event.getEmail());
-            user.setName(event.getEmail().split("@")[0]); // Default name from email
-            // Note: We don't have password here, it's only in Security Service
-            // Set other fields as needed or leave them null
+            user.setName(event.getName());
+            user.setBusinessName(event.getBusinessName());
+            user.setPhoneNumber(event.getPhoneNumber());
+            // Note: Password is NOT sent in the event for security
+            // It stays only in the Security Service database
 
             User createdUser = userService.createUser(user);
 
             log.info("✓ Successfully created user profile");
             log.info("  - User ID (user-service): {}", createdUser.getId());
             log.info("  - Email: {}", createdUser.getEmail());
+            log.info("  - Name: {}", createdUser.getName());
+            log.info("  - Business Name: {}", createdUser.getBusinessName());
+            log.info("  - Phone: {}", createdUser.getPhoneNumber());
             log.info("  - Security Service UserId: {}", event.getUserId());
             log.info("========================================");
 
@@ -76,12 +84,6 @@ public class UserEventListener {
             log.error("========================================");
 
             // Don't acknowledge - message will be retried
-            // In production, consider:
-            // 1. Exponential backoff
-            // 2. Dead Letter Queue after max retries
-            // 3. Alert monitoring systems
-
-            // For now, throw exception to trigger retry
             throw new RuntimeException("Failed to process user registration event", e);
         }
     }

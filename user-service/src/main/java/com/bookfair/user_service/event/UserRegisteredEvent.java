@@ -17,6 +17,13 @@ public class UserRegisteredEvent {
     private String email;
     private String role;
     private LocalDateTime registeredAt;
+
+    // User details
+    private String name;
+    private String businessName;
+    private String phoneNumber;
+
+    // Event metadata
     private String eventId;
     private String eventType;
 }

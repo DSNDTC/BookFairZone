@@ -1,6 +1,7 @@
 package com.bookfairzone.security_service.event;
 
 import com.bookfairzone.security_service.enums.Role;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,9 @@ public class UserRegisteredEvent {
     private String email;
     private Role role;
     private LocalDateTime registeredAt;
+    private String name;
+    private String businessName;
+    private String phoneNumber;
 
     // Additional fields that User Service might need
     private String eventId; // Unique event ID for idempotency
