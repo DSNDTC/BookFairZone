@@ -5,6 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { BookOpen, Search, Users, MapPin, TrendingUp, Filter, Settings, LogOut } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import { NotificationBell } from "@/components/NotificationBell";
+
 import authService from "@/services/auth.service";
 import { toast } from "sonner";
 
@@ -19,13 +22,28 @@ interface Reservation {
   status: "confirmed" | "pending" | "cancelled";
 }
 
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
 
 const EmployeePortal = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: "1", title: "New Reservation", message: "ABC Publishers made a reservation", time: "10 min ago", read: false },
+    { id: "2", title: "Payment Received", message: "LKR 85,000 received from XYZ Books", time: "1 hour ago", read: false },
+    { id: "3", title: "Stall Cancelled", message: "Literary House cancelled stall C2", time: "2 hours ago", read: true },
+  ]);
+
   const [user, setUser] = useState<any>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
 
   useEffect(() => {
     // Get current user info
@@ -34,6 +52,14 @@ const EmployeePortal = () => {
       setUser(currentUser);
     }
   }, []);
+
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleClearAll = () => {
+    setNotifications([]);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -50,6 +76,7 @@ const EmployeePortal = () => {
     } finally {
       setIsLoggingOut(false);
     }
+
   };
 
   const mockReservations: Reservation[] = [
@@ -133,6 +160,11 @@ const EmployeePortal = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <NotificationBell 
+                notifications={notifications}
+                onMarkAsRead={handleMarkAsRead}
+                onClearAll={handleClearAll}
+              />
               <Link to="/stall-management">
                 <Button variant="outline" size="sm">
                   <Settings className="w-4 h-4 mr-2" />
