@@ -5,6 +5,7 @@
 -- We just need to create the security database
 
 CREATE DATABASE reservation_security;
+CREATE DATABASE userdb;
 
 -- Grant privileges to the main user
 GRANT ALL PRIVILEGES ON DATABASE reservation_security TO myuser;
