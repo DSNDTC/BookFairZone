@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-//package com.bookfairzone.security_service.controller;
-@CrossOrigin(origins = "http://localhost:5173")
+
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "http://localhost:8080"})
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor

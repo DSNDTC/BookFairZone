@@ -66,8 +66,8 @@ public class AuthService {
         String token = generateVerificationToken(savedUser);
         emailService.sendVerificationEmail(savedUser.getEmail(), token);
 
-        // Publish event to Kafka for User Service
-        publishUserRegisteredEvent(savedUser);
+        // Publish event to Kafka for User Service with all user details
+        publishUserRegisteredEvent(savedUser, request);
 
         return RegisterResponse.builder()
                 .userId(savedUser.getUserId())
@@ -77,12 +77,15 @@ public class AuthService {
                 .build();
     }
 
-    private void publishUserRegisteredEvent(User user) {
+    private void publishUserRegisteredEvent(User user, RegisterRequest request) {
         UserRegisteredEvent event = UserRegisteredEvent.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .role(user.getRole())
                 .registeredAt(user.getCreatedAt())
+                .name(request.getName())
+                .businessName(request.getBusinessName())
+                .phoneNumber(request.getPhoneNumber())
                 .eventId(UUID.randomUUID().toString())
                 .eventType("USER_REGISTERED")
                 .build();
@@ -237,7 +240,7 @@ public class AuthService {
     }
 
 
-    // ========== PASSWORD RESET FUNCTIONALITY ==========
+
 
     @Transactional
     public String forgotPassword(ForgotPasswordRequest request) {
