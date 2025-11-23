@@ -27,14 +27,14 @@ RUN apk add --no-cache curl
 WORKDIR /app
 
 # API Gateway runs on port 8080
-EXPOSE 8080
+EXPOSE 9090
 
 # Copy the built JAR from the 'builder' stage
 COPY --from=builder /workspace/build/libs/*.jar app.jar
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+  CMD curl -f http://localhost:9090/actuator/health || exit 1
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

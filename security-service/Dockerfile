@@ -1,34 +1,35 @@
+# security-service/Dockerfile
+
 # ---- Build stage ----
-FROM gradle:8.10.2-jdk21 AS builder
-WORKDIR /app
+FROM gradle:8.4.0-jdk21 AS builder
+WORKDIR /workspace
 
-# Leverage layer caching for dependencies
-COPY build.gradle settings.gradle ./
-COPY gradle gradle
-RUN gradle --no-daemon help || true
+# 1. Copy the source code for both modules into distinct folders
+COPY bookfair-contracts/ /workspace/bookfair-contracts/
+COPY security-service/ /workspace/security-service/
 
-# Increase Gradle network timeouts (ms) to be resilient on slow networks
-ENV GRADLE_OPTS "-Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=60000"
+# 2. CREATE a root settings.gradle file dynamically
+# This "glues" the two modules together so Gradle can resolve the dependency.
+RUN echo "rootProject.name = 'docker-build'" > settings.gradle && \
+    echo "include 'bookfair-contracts'" >> settings.gradle && \
+    echo "include 'security-service'" >> settings.gradle
 
-# Copy the rest of the source and build a fat jar
-COPY src src
-RUN gradle --no-daemon clean bootJar
+# 3. Build the specific service
+# Now we run the build from the root, targeting the security-service module.
+RUN gradle :security-service:bootJar --no-daemon
 
 # ---- Run stage ----
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine
+RUN apk add --no-cache curl
 WORKDIR /app
-
-# Container-friendly JVM defaults
 ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75 -Djava.security.egd=file:/dev/./urandom"
 
-# Copy the built artifact
-COPY --from=builder /app/build/libs/*.jar /app/app.jar
+# 4. Copy the JAR
+# Note the path: it is now inside the subfolder 'security-service'
+COPY --from=builder /workspace/security-service/build/libs/*.jar /app/app.jar
 
-# Spring Boot default port
-EXPOSE 8080
-
-# Allow overriding Spring properties via environment
+EXPOSE 8096
 ENV SPRING_PROFILES_ACTIVE=default
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "-f", "http://localhost:8096/actuator/health" ]
 
-# Start the service
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]

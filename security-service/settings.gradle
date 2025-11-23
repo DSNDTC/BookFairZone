@@ -1,1 +1,3 @@
-rootProject.name = 'security-service'
+rootProject.name = 'docker-build'
+include 'bookfair-contracts'
+include 'security-service'
