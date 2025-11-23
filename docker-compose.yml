@@ -69,6 +69,7 @@ services:
     env_file:
       - security-service/.env
     environment:
+      SERVER_PORT: 8096
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/reservation_security
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mysecretpassword
@@ -145,11 +146,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: mysecretpassword
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SERVER_PORT: 8084
-    ports:
-      - "8084:8084"
     networks:
       - app-network
-    restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1" ]
       interval: 30s
