@@ -17,6 +17,7 @@ public class ReservationResponse {
     private Long id;
     private Long stallId;
     private UUID userId;
+    private String userEmail;
     private ReservationStatus status;
     private LocalDateTime createdAt;
 
@@ -25,6 +26,7 @@ public class ReservationResponse {
                 .id(entity.getId())
                 .stallId(entity.getStallId())
                 .userId(entity.getUserId())
+                .userEmail(entity.getUserEmail())
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .build();

@@ -24,9 +24,9 @@ public class NotificationEventProducer {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void sendReservationConfirmedEvent(KafkaReservationEvent event) {
+    public void sendReservationEvent(KafkaReservationEvent event) {
         try {
-            log.info("Publishing reservation confirmed event to topic {}: {}", topic, event);
+            log.info("Publishing reservation event to topic {}: {}", topic, event);
             kafkaTemplate.send(topic, event.getReservationId().toString(), event);
         } catch (Exception e) {
             log.error("Failed to send notification event for reservation {}: {}", event.getReservationId(), e.getMessage());

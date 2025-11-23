@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BookOpen, Mail, Lock, Building2, Phone, User } from "lucide-react";
 import { toast } from "sonner";
+import authService, { RegisterRequest } from "@/services/auth.service";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -25,18 +26,72 @@ const Signup = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }
 
+    if (formData.password.length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      return;
+    }
+
+    if (!formData.businessName || !formData.contactPerson || !formData.email || !formData.phone) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate signup
-    setTimeout(() => {
-      toast.success("Registration successful!");
-      navigate("/dashboard");
-    }, 1000);
+    try {
+      // Prepare registration data matching backend RegisterRequest DTO
+      const registerData: RegisterRequest = {
+        email: formData.email,
+        password: formData.password,
+        role: 'USER_ROLE', // Default role for signup page
+        name: formData.contactPerson,
+        businessName: formData.businessName,
+        phoneNumber: formData.phone,
+      };
+
+      // Call the backend registration API
+      const response = await authService.register(registerData);
+
+      // Show success message
+      toast.success(response.message || "Registration successful! Please check your email for verification link.");
+
+      // Redirect to login page after a delay
+      setTimeout(() => {
+        navigate("/login", {
+          state: {
+            message: "Registration successful! Please verify your email before logging in. Check your inbox for the verification link."
+          }
+        });
+      }, 2000);
+
+    } catch (error: any) {
+      console.error("Registration error:", error);
+
+      // Display error message
+      const errorMessage = error.message || "Registration failed. Please try again.";
+
+      // Handle specific errors
+      if (errorMessage.includes("already registered")) {
+        toast.error("This email is already registered. Please use a different email or try logging in.");
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -105,7 +160,7 @@ const Signup = () => {
             <form onSubmit={handleSignup} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="businessName" className="text-sm font-medium">
-                  Business Name
+                  Business Name <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -115,6 +170,7 @@ const Signup = () => {
                     value={formData.businessName}
                     onChange={(e) => handleChange("businessName", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -122,7 +178,7 @@ const Signup = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="contactPerson" className="text-sm font-medium">
-                  Contact Person
+                  Contact Person <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -132,6 +188,7 @@ const Signup = () => {
                     value={formData.contactPerson}
                     onChange={(e) => handleChange("contactPerson", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -140,7 +197,7 @@ const Signup = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">
-                    Email Address
+                    Email Address <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -151,6 +208,7 @@ const Signup = () => {
                       value={formData.email}
                       onChange={(e) => handleChange("email", e.target.value)}
                       className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                      disabled={isLoading}
                       required
                     />
                   </div>
@@ -158,7 +216,7 @@ const Signup = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-sm font-medium">
-                    Phone Number
+                    Phone Number <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -169,6 +227,7 @@ const Signup = () => {
                       value={formData.phone}
                       onChange={(e) => handleChange("phone", e.target.value)}
                       className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                      disabled={isLoading}
                       required
                     />
                   </div>
@@ -177,7 +236,7 @@ const Signup = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
-                  Password
+                  Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -188,14 +247,17 @@ const Signup = () => {
                     value={formData.password}
                     onChange={(e) => handleChange("password", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                    minLength={8}
+                    disabled={isLoading}
                     required
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                  Confirm Password
+                  Confirm Password <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -206,13 +268,19 @@ const Signup = () => {
                     value={formData.confirmPassword}
                     onChange={(e) => handleChange("confirmPassword", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                    disabled={isLoading}
                     required
                   />
                 </div>
               </div>
 
               <div className="flex items-start gap-2">
-                <input type="checkbox" className="mt-1 rounded border-border" required />
+                <input
+                  type="checkbox"
+                  className="mt-1 rounded border-border"
+                  disabled={isLoading}
+                  required
+                />
                 <Label className="text-xs text-muted-foreground font-normal leading-relaxed">
                   I agree to the Terms & Conditions and Privacy Policy of the Colombo International Bookfair
                 </Label>
@@ -232,7 +300,11 @@ const Signup = () => {
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link to="/login" className="text-burgundy hover:text-burgundy-light font-semibold transition-colors">
+                <Link
+                  to="/login"
+                  className="text-burgundy hover:text-burgundy-light font-semibold transition-colors"
+                  tabIndex={isLoading ? -1 : 0}
+                >
                   Sign In
                 </Link>
               </p>

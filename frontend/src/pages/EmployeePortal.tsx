@@ -3,9 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Search, Users, MapPin, Calendar, TrendingUp, Filter, Settings } from "lucide-react";
+import { BookOpen, Search, Users, MapPin, TrendingUp, Filter, Settings, LogOut } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { NotificationBell } from "@/components/NotificationBell";
+
+import authService from "@/services/auth.service";
+import { toast } from "sonner";
 
 interface Reservation {
   id: string;
@@ -30,24 +34,25 @@ const EmployeePortal = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: "1", title: "New Reservation", message: "ABC Publishers made a reservation", time: "10 min ago", read: false },
     { id: "2", title: "Payment Received", message: "LKR 85,000 received from XYZ Books", time: "1 hour ago", read: false },
     { id: "3", title: "Stall Cancelled", message: "Literary House cancelled stall C2", time: "2 hours ago", read: true },
   ]);
 
-  useEffect(() => {
-    // Check if employee is authenticated
-    const isAuthenticated = localStorage.getItem("employeeAuth");
-    if (!isAuthenticated) {
-      navigate("/employee-login");
-    }
-  }, [navigate]);
+  const [user, setUser] = useState<any>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("employeeAuth");
-    navigate("/employee-login");
-  };
+
+  useEffect(() => {
+    // Get current user info
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+    }
+  }, []);
+
 
   const handleMarkAsRead = (id: string) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
@@ -55,6 +60,23 @@ const EmployeePortal = () => {
 
   const handleClearAll = () => {
     setNotifications([]);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    try {
+      setIsLoggingOut(true);
+      await authService.logout();
+      toast.success("Logged out successfully");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Logout failed, but you've been logged out locally");
+      navigate("/login", { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
+
   };
 
   const mockReservations: Reservation[] = [
@@ -132,7 +154,9 @@ const EmployeePortal = () => {
               </div>
               <div>
                 <h1 className="font-serif text-xl font-bold text-foreground">Employee Portal</h1>
-                <p className="text-xs text-muted-foreground">SLBPA Administrator</p>
+                <p className="text-xs text-muted-foreground">
+                  {user?.email || "SLBPA Administrator"}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -147,8 +171,14 @@ const EmployeePortal = () => {
                   Manage Stalls
                 </Button>
               </Link>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Logout
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                {isLoggingOut ? "Logging out..." : "Logout"}
               </Button>
             </div>
           </div>
