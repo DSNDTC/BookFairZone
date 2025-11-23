@@ -4,7 +4,7 @@ import api from '../lib/api';
 export interface RegisterRequest {
   email: string;
   password: string;
-  role: 'PUBLISHER' | 'USER' | 'ADMIN';
+  role: 'PUBLISHER' | 'USER' | 'ADMIN' | 'USER_ROLE' | 'ADMIN_ROLE'; // Backend uses these enum values
   name: string;
   businessName?: string;
   phoneNumber: string;
@@ -61,7 +61,7 @@ class AuthService {
       return response.data;
     } catch (error: any) {
       console.error('Registration failed:', error);
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      const errorMessage = error.response?.data?.message || error.response?.data || 'Registration failed';
       throw new Error(errorMessage);
     }
   }
@@ -73,7 +73,7 @@ class AuthService {
       return response.data;
     } catch (error: any) {
       console.error('Email verification failed:', error);
-      throw new Error(error.response?.data?.message || 'Email verification failed');
+      throw new Error(error.response?.data?.message || error.response?.data || 'Email verification failed');
     }
   }
 
@@ -95,12 +95,15 @@ class AuthService {
             role: tokenPayload.role
           }));
         }
+
+        // Clear pending user if exists
+        localStorage.removeItem('pendingUser');
       }
 
       return response.data;
     } catch (error: any) {
       console.error('Login failed:', error);
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      const errorMessage = error.response?.data?.message || error.response?.data || 'Login failed';
       throw new Error(errorMessage);
     }
   }
@@ -115,13 +118,23 @@ class AuthService {
       if (response.data.accessToken) {
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('refreshToken', response.data.refreshToken);
+
+        // Update user info from new token
+        const tokenPayload = this.parseJwt(response.data.accessToken);
+        if (tokenPayload) {
+          localStorage.setItem('user', JSON.stringify({
+            userId: tokenPayload.userId,
+            email: tokenPayload.sub,
+            role: tokenPayload.role
+          }));
+        }
       }
 
       return response.data;
     } catch (error: any) {
       console.error('Token refresh failed:', error);
       this.logout();
-      throw new Error(error.response?.data?.message || 'Token refresh failed');
+      throw new Error(error.response?.data?.message || error.response?.data || 'Token refresh failed');
     }
   }
 
@@ -130,6 +143,7 @@ class AuthService {
     try {
       const token = localStorage.getItem('accessToken');
       if (token) {
+        // Backend expects token in Authorization header
         await api.post('/auth/logout', {}, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -138,6 +152,7 @@ class AuthService {
       }
     } catch (error) {
       console.error('Logout request failed:', error);
+      // Continue with local cleanup even if API call fails
     } finally {
       // Clear local storage regardless of API call result
       localStorage.removeItem('accessToken');
@@ -154,7 +169,7 @@ class AuthService {
       return response.data;
     } catch (error: any) {
       console.error('Forgot password failed:', error);
-      throw new Error(error.response?.data?.message || 'Failed to send reset email');
+      throw new Error(error.response?.data?.message || error.response?.data || 'Failed to send reset email');
     }
   }
 
@@ -165,7 +180,7 @@ class AuthService {
       return response.data;
     } catch (error: any) {
       console.error('Password reset failed:', error);
-      throw new Error(error.response?.data?.message || 'Password reset failed');
+      throw new Error(error.response?.data?.message || error.response?.data || 'Password reset failed');
     }
   }
 
@@ -203,6 +218,12 @@ class AuthService {
   hasRole(role: string): boolean {
     const user = this.getCurrentUser();
     return user ? user.role === role : false;
+  }
+
+  // Check if user has any of the specified roles
+  hasAnyRole(roles: string[]): boolean {
+    const user = this.getCurrentUser();
+    return user ? roles.includes(user.role) : false;
   }
 
   // Parse JWT token (simple implementation)

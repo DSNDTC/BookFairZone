@@ -1,26 +1,80 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Mail, Lock } from "lucide-react";
+import { BookOpen, Mail, Lock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import authService, { LoginRequest } from "@/services/auth.service";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const location = useLocation();
+  const [formData, setFormData] = useState<LoginRequest>({
+    email: "",
+    password: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Get any messages from location state (e.g., from signup redirect)
+  const stateMessage = (location.state as any)?.message;
+
+  const handleChange = (field: keyof LoginRequest, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Basic validation
+    if (!formData.email || !formData.password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate login
-    setTimeout(() => {
+    try {
+      const response = await authService.login(formData);
+
+      // Check if MFA is required
+      if (response.mfaRequired) {
+        toast.info("MFA verification required");
+        // TODO: Navigate to MFA verification page
+        // navigate("/mfa-verify");
+        return;
+      }
+
+      // Success - tokens are already stored by authService.login()
       toast.success("Login successful!");
-      navigate("/dashboard");
-    }, 1000);
+
+      // Get user info to check role
+      const user = authService.getCurrentUser();
+
+      // Redirect based on role
+      if (user?.role === "ADMIN_ROLE") {
+        navigate("/employee-portal");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+
+      // Handle specific error messages
+      const errorMessage = error.message || "Login failed. Please try again.";
+
+      if (errorMessage.includes("not verified")) {
+        toast.error("Please verify your email before logging in. Check your inbox.");
+      } else if (errorMessage.includes("suspended") || errorMessage.includes("locked")) {
+        toast.error("Your account has been suspended or locked. Please contact support.");
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -62,6 +116,16 @@ const Login = () => {
               <p className="text-muted-foreground">Sign in to manage your stall reservations</p>
             </div>
 
+            {/* Show message from signup redirect */}
+            {stateMessage && (
+              <Alert className="mb-6 border-blue-200 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 text-sm">
+                  {stateMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
@@ -73,9 +137,10 @@ const Login = () => {
                     id="email"
                     type="email"
                     placeholder="publisher@bookfair.lk"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.email}
+                    onChange={(e) => handleChange("email", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-burgundy transition-colors"
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -91,9 +156,10 @@ const Login = () => {
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) => handleChange("password", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-burgundy transition-colors"
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -101,10 +167,20 @@ const Login = () => {
 
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-border" />
+                  <input
+                    type="checkbox"
+                    className="rounded border-border"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLoading}
+                  />
                   <span className="text-muted-foreground">Remember me</span>
                 </label>
-                <Link to="/forgot-password" className="text-burgundy hover:text-burgundy-light transition-colors">
+                <Link
+                  to="/forgot-password"
+                  className="text-burgundy hover:text-burgundy-light transition-colors"
+                  tabIndex={isLoading ? -1 : 0}
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -123,14 +199,22 @@ const Login = () => {
             <div className="mt-8 text-center">
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-burgundy hover:text-burgundy-light font-semibold transition-colors">
+                <Link
+                  to="/signup"
+                  className="text-burgundy hover:text-burgundy-light font-semibold transition-colors"
+                  tabIndex={isLoading ? -1 : 0}
+                >
                   Create Account
                 </Link>
               </p>
             </div>
 
             <div className="mt-8 pt-6 border-t border-border text-center">
-              <Link to="/employee-login" className="text-sm text-brown hover:text-brown-light transition-colors">
+              <Link
+                to="/employee-login"
+                className="text-sm text-brown hover:text-brown-light transition-colors"
+                tabIndex={isLoading ? -1 : 0}
+              >
                 Employee Portal →
               </Link>
             </div>

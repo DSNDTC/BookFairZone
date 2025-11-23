@@ -42,6 +42,13 @@ const Signup = () => {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -65,7 +72,7 @@ const Signup = () => {
       setTimeout(() => {
         navigate("/login", {
           state: {
-            message: "Please verify your email before logging in. Check your inbox for the verification link."
+            message: "Registration successful! Please verify your email before logging in. Check your inbox for the verification link."
           }
         });
       }, 2000);
@@ -75,7 +82,13 @@ const Signup = () => {
 
       // Display error message
       const errorMessage = error.message || "Registration failed. Please try again.";
-      toast.error(errorMessage);
+
+      // Handle specific errors
+      if (errorMessage.includes("already registered")) {
+        toast.error("This email is already registered. Please use a different email or try logging in.");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -157,6 +170,7 @@ const Signup = () => {
                     value={formData.businessName}
                     onChange={(e) => handleChange("businessName", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -174,6 +188,7 @@ const Signup = () => {
                     value={formData.contactPerson}
                     onChange={(e) => handleChange("contactPerson", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -193,6 +208,7 @@ const Signup = () => {
                       value={formData.email}
                       onChange={(e) => handleChange("email", e.target.value)}
                       className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                      disabled={isLoading}
                       required
                     />
                   </div>
@@ -211,6 +227,7 @@ const Signup = () => {
                       value={formData.phone}
                       onChange={(e) => handleChange("phone", e.target.value)}
                       className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                      disabled={isLoading}
                       required
                     />
                   </div>
@@ -231,6 +248,7 @@ const Signup = () => {
                     onChange={(e) => handleChange("password", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-gold transition-colors"
                     minLength={8}
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -250,13 +268,19 @@ const Signup = () => {
                     value={formData.confirmPassword}
                     onChange={(e) => handleChange("confirmPassword", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-gold transition-colors"
+                    disabled={isLoading}
                     required
                   />
                 </div>
               </div>
 
               <div className="flex items-start gap-2">
-                <input type="checkbox" className="mt-1 rounded border-border" required />
+                <input
+                  type="checkbox"
+                  className="mt-1 rounded border-border"
+                  disabled={isLoading}
+                  required
+                />
                 <Label className="text-xs text-muted-foreground font-normal leading-relaxed">
                   I agree to the Terms & Conditions and Privacy Policy of the Colombo International Bookfair
                 </Label>
@@ -276,7 +300,11 @@ const Signup = () => {
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link to="/login" className="text-burgundy hover:text-burgundy-light font-semibold transition-colors">
+                <Link
+                  to="/login"
+                  className="text-burgundy hover:text-burgundy-light font-semibold transition-colors"
+                  tabIndex={isLoading ? -1 : 0}
+                >
                   Sign In
                 </Link>
               </p>
