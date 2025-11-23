@@ -45,8 +45,6 @@ services:
     volumes:
       # Persist database data locally in a Docker volume
       - postgres_data:/var/lib/postgresql/data
-      # Mount SQL init script to create additional databases
-      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
     networks:
       - app-network
     healthcheck:
@@ -236,6 +234,7 @@ services:
     container_name: kafka-consumer
     depends_on:
       - kafka
+      - reservation-service
     # This command block is now corrected
     command: >
       sh -c "
@@ -253,7 +252,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - "8090:8080"
+      - "8080:8080"
     depends_on:
       - kafka
       - zookeeper
