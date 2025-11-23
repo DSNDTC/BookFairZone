@@ -56,7 +56,7 @@ const Signup = () => {
       const registerData: RegisterRequest = {
         email: formData.email,
         password: formData.password,
-        role: 'USER_ROLE', // Default role for signup page
+        role: 'ADMIN_ROLE', // Default role for signup page
         name: formData.contactPerson,
         businessName: formData.businessName,
         phoneNumber: formData.phone,

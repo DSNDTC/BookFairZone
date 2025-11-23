@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
-import EmployeeLogin from "./pages/EmployeeLogin";
+// EmployeeLogin removed - using unified login with role-based routing
 import EmployeePortal from "./pages/EmployeePortal";
 import Dashboard from "./pages/Dashboard";
 import Genres from "./pages/Genres";
@@ -52,7 +52,6 @@ const App = () => (
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/employee-login" element={<EmployeeLogin />} />
 
           {/* Protected Publisher/User routes */}
           <Route
@@ -100,10 +99,6 @@ const App = () => (
 
           {/* 404 page */}
           <Route path="*" element={<NotFound />} />
-
-          <Route path="/genres" element={<Genres />} />
-          <Route path="/reservations" element={<Reservations />} />
-          <Route path="/stall-management" element={<StallManagement />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

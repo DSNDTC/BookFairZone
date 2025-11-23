@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,18 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Check if already authenticated
+  useEffect(() => {
+    if (authService.isAuthenticated()) {
+      const user = authService.getCurrentUser();
+      if (user?.role === "ADMIN_ROLE" || user?.role === "ADMIN") {
+        navigate("/employee-portal", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [navigate]);
 
   // Get any messages from location state (e.g., from signup redirect)
   const stateMessage = (location.state as any)?.message;
@@ -54,10 +66,10 @@ const Login = () => {
       const user = authService.getCurrentUser();
 
       // Redirect based on role
-      if (user?.role === "ADMIN_ROLE") {
-        navigate("/employee-portal");
+      if (user?.role === "ADMIN_ROLE" || user?.role === "ADMIN") {
+        navigate("/employee-portal", { replace: true });
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -113,7 +125,7 @@ const Login = () => {
               <h2 className="font-serif text-3xl font-bold text-foreground mb-2">
                 Welcome Back
               </h2>
-              <p className="text-muted-foreground">Sign in to manage your stall reservations</p>
+              <p className="text-muted-foreground">Sign in to access your account</p>
             </div>
 
             {/* Show message from signup redirect */}
@@ -136,7 +148,7 @@ const Login = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="publisher@bookfair.lk"
+                    placeholder="your@email.com"
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     className="pl-10 h-12 border-border focus:border-burgundy transition-colors"
@@ -207,16 +219,6 @@ const Login = () => {
                   Create Account
                 </Link>
               </p>
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-border text-center">
-              <Link
-                to="/employee-login"
-                className="text-sm text-brown hover:text-brown-light transition-colors"
-                tabIndex={isLoading ? -1 : 0}
-              >
-                Employee Portal →
-              </Link>
             </div>
           </div>
         </div>
