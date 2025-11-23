@@ -1,7 +1,7 @@
 package com.bookfair.user_service.service;
 
 import com.bookfair.user_service.repository.UserRepository;
-import com.bookfair.user_service.model.dto.User;
+import com.bookfair.user_service.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -49,4 +49,8 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
+    // NEW: Check if user exists by email (for idempotency)
+    public boolean userExistsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
 }

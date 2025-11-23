@@ -1,6 +1,6 @@
 package com.bookfair.user_service.controller;
 
-import com.bookfair.user_service.model.dto.User;
+import com.bookfair.user_service.model.User;
 import com.bookfair.user_service.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
