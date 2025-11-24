@@ -26,6 +26,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
       - app-network
 
@@ -79,6 +80,11 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       APP_CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:8080
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bookfair.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
+      ADMIN_AUTO_CREATE: ${ADMIN_AUTO_CREATE:-true}
+
+
     ports:
       - "8082:8080"
     networks:
