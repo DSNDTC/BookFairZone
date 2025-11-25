@@ -33,10 +33,10 @@ public class Stall {
     private Boolean isReserved = false;
 
     @Column(name = "location_x")
-    private Integer locationX;
+    private Double locationX;
 
     @Column(name = "location_y")
-    private Integer locationY;
+    private Double locationY;
 
     // One stall can have many genres
     @OneToMany(mappedBy = "stall", cascade = CascadeType.ALL, orphanRemoval = true)
