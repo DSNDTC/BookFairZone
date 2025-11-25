@@ -19,7 +19,7 @@ RUN chmod +x ./gradlew
 
 # Build the reservation-service.
 # Gradle is smart and will build :bookfair-contracts first as a dependency.
-RUN ./gradlew :reservation-service:bootJar --no-daemon
+RUN --mount=type=cache,target=/home/gradle/.gradle ./gradlew :reservation-service:bootJar --no-daemon
 
 
 # STAGE 2: Create final lightweight Java 21 runtime image
