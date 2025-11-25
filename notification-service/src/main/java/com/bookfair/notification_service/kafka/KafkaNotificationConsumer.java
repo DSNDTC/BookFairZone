@@ -15,9 +15,21 @@ public class KafkaNotificationConsumer {
         LOGGER.info(String.format("Kafka Notification Event received in email service => %s",
                 kafkaNotificationEvent.toString()));
         try {
-            LOGGER.info("Sending confirmation email notification to: " + kafkaNotificationEvent.getUserEmail());
+            LOGGER.info("Sending confirmation notification to: " + kafkaNotificationEvent.getUserEmail());
         } catch (Exception e) {
-            LOGGER.error("Error while sending email notification: " + e.getMessage());
+            LOGGER.error("Error while sending notification: " + e.getMessage());
+        }
+
+    }
+
+    @KafkaListener(topics = "${app.kafka.topic.cancellation}", groupId = "${spring.kafka.consumer.group-id}")
+    public void sendCancellationNotifications(KafkaReservationEvent kafkaNotificationEvent) {
+        LOGGER.info(String.format("Kafka Cancellation Event received in email service => %s",
+                kafkaNotificationEvent.toString()));
+        try {
+            LOGGER.info("Sending cancellation notification to: " + kafkaNotificationEvent.getUserEmail());
+        } catch (Exception e) {
+            LOGGER.error("Error while sending notification: " + e.getMessage());
         }
 
     }
