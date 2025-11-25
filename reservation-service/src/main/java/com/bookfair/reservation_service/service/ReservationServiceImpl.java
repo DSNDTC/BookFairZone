@@ -93,6 +93,30 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation savedReservation = reservationRepository.save(reservation);
         log.info("Reservation {} confirmed.", reservationId);
 
+        // Automatically reject all other pending reservations for the same stall
+        List<Reservation> otherPendingReservations = reservationRepository
+                .findByStallIdAndStatus(reservation.getStallId(), ReservationStatus.PENDING);
+        
+        for (Reservation pendingReservation : otherPendingReservations) {
+            if (!pendingReservation.getId().equals(reservationId)) {
+                pendingReservation.setStatus(ReservationStatus.REJECTED);
+                reservationRepository.save(pendingReservation);
+                log.info("Reservation {} auto-rejected because stall {} was confirmed for another user.", 
+                        pendingReservation.getId(), reservation.getStallId());
+
+                // Send notification to the rejected user
+                KafkaReservationEvent rejectionEvent = new KafkaReservationEvent(
+                        pendingReservation.getUserId(),
+                        pendingReservation.getUserEmail(),
+                        pendingReservation.getId(),
+                        pendingReservation.getStallId(),
+                        "Your reservation has been rejected because the stall was assigned to another publisher.",
+                        "REJECTED"
+                );
+                notificationEventProducer.sendReservationConfirmedEvent(rejectionEvent);
+            }
+        }
+
         StallDto stall = getStallDetails(reservation.getStallId());
 
         KafkaStallUpdateEvent stallEvent = new KafkaStallUpdateEvent(reservation.getStallId(), true, "Stall reserved for reservation ID " + reservationId);
