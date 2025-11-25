@@ -13,6 +13,7 @@ import EmployeePortal from "./pages/EmployeePortal";
 import Dashboard from "./pages/Dashboard";
 import Genres from "./pages/Genres";
 import Reservations from "./pages/Reservations";
+import MyReservations from "./pages/MyReservations";
 import StallManagement from "./pages/StallManagement";
 import ReservationManagement from "./pages/ReservationManagement";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -80,6 +81,14 @@ const App = () => (
             element={
               <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE']}>
                 <Reservations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-reservations"
+            element={
+              <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE']}>
+                <MyReservations />
               </ProtectedRoute>
             }
           />
