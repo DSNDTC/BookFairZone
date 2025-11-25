@@ -34,10 +34,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/reservations/my-reservations").hasAuthority("USER_ROLE")
 
                         // EMPLOYEES (ADMIN_ROLE) manage reservations
-                        .requestMatchers(HttpMethod.POST, "/api/reservations/{id}/confirm").hasAuthority("ADMIN_ROLE")
-                        .requestMatchers(HttpMethod.POST, "/api/reservations/{id}/reject").hasAuthority("ADMIN_ROLE")
+                        .requestMatchers(HttpMethod.POST, "/api/reservations/*/confirm").hasAuthority("ADMIN_ROLE")
+                        .requestMatchers(HttpMethod.POST, "/api/reservations/*/reject").hasAuthority("ADMIN_ROLE")
                         .requestMatchers(HttpMethod.GET, "/api/reservations").hasAuthority("ADMIN_ROLE")
-                        .requestMatchers(HttpMethod.GET, "/api/reservations/user/{userId}").hasAuthority("ADMIN_ROLE")
+                        .requestMatchers(HttpMethod.GET, "/api/reservations/user/*").hasAuthority("ADMIN_ROLE")
 
                         .anyRequest().authenticated()
                 )
