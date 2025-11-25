@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { BookOpen, ArrowLeft, Plus, X, BookMarked, Store, CheckCircle2 } from "lucide-react";
+import { BookOpen, ArrowLeft, Plus, X, BookMarked, Store, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { genreApi, reservationApi, GenreResponse } from "@/lib/api";
 
 const SUGGESTED_GENRES = [
   "Fiction",
@@ -33,51 +34,192 @@ const SUGGESTED_GENRES = [
   "Health & Wellness",
 ];
 
-// Mock booked stalls data
-const BOOKED_STALLS = [
-  { id: "S-101", name: "Stall 101", section: "Main Hall A", bookingDate: "2024-01-15" },
-  { id: "S-205", name: "Stall 205", section: "Main Hall B", bookingDate: "2024-01-18" },
-  { id: "S-312", name: "Stall 312", section: "East Wing", bookingDate: "2024-01-20" },
+type BookedStall = {
+  id: number;
+  name: string;
+  section?: string;
+  bookingDate?: string;
+};
+
+// Fallback stalls used if the API fails
+const FALLBACK_BOOKED_STALLS: BookedStall[] = [
+  { id: 101, name: "Stall 101", section: "Main Hall A", bookingDate: "2024-01-15" },
+  { id: 205, name: "Stall 205", section: "Main Hall B", bookingDate: "2024-01-18" },
+  { id: 312, name: "Stall 312", section: "East Wing", bookingDate: "2024-01-20" },
 ];
 
 const Genres = () => {
-  const [selectedStall, setSelectedStall] = useState<string | null>(null);
+  const [bookedStalls, setBookedStalls] = useState<BookedStall[]>([]);
+  const [isLoadingStalls, setIsLoadingStalls] = useState<boolean>(true);
+  const [selectedStall, setSelectedStall] = useState<number | null>(null);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [existingGenres, setExistingGenres] = useState<GenreResponse[]>([]);
   const [customGenre, setCustomGenre] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [isLoadingGenres, setIsLoadingGenres] = useState(false);
 
-  const handleToggleGenre = (genre: string) => {
-    if (selectedGenres.includes(genre)) {
-      setSelectedGenres(selectedGenres.filter((g) => g !== genre));
-    } else {
-      setSelectedGenres([...selectedGenres, genre]);
+  useEffect(() => {
+    const fetchBookedStalls = async () => {
+      setIsLoadingStalls(true);
+      try {
+        const reservations = await reservationApi.getMyReservations();
+        const unique = new Map<number, BookedStall>();
+
+        reservations.forEach((reservation) => {
+          if (!unique.has(reservation.stallId)) {
+            unique.set(reservation.stallId, {
+              id: reservation.stallId,
+              name: `Stall ${reservation.stallId}`,
+              section: reservation.status ?? "Reserved",
+              bookingDate: reservation.createdAt,
+            });
+          }
+        });
+
+        const stalls = Array.from(unique.values());
+        setBookedStalls(stalls.length ? stalls : FALLBACK_BOOKED_STALLS);
+
+        if (!stalls.length) {
+          toast.message("Showing example stalls", {
+            description: "We couldn't load your reservations, so a demo list is shown.",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load reservations", error);
+        toast.error("Couldn't load your booked stalls. Showing demo data.");
+        setBookedStalls(FALLBACK_BOOKED_STALLS);
+      } finally {
+        setIsLoadingStalls(false);
+      }
+    };
+
+    fetchBookedStalls();
+  }, []);
+
+  const loadGenresForStall = async (stallId: number) => {
+    setIsLoadingGenres(true);
+    try {
+      const genres = await genreApi.getByStall(stallId);
+      setExistingGenres(genres);
+      setSelectedGenres(genres.map((genre) => genre.name));
+    } catch (error) {
+      console.error("Failed to load genres", error);
+      toast.error("Unable to load genres for this stall");
+      setExistingGenres([]);
+      setSelectedGenres([]);
+    } finally {
+      setIsLoadingGenres(false);
     }
   };
 
+  const handleSelectStall = (stallId: number) => {
+    setSelectedStall(stallId);
+    loadGenresForStall(stallId);
+  };
+
+  const handleToggleGenre = (genre: string) => {
+    const normalized = genre.trim();
+    if (!normalized) return;
+
+    setSelectedGenres((prev) =>
+      prev.includes(normalized) ? prev.filter((g) => g !== normalized) : [...prev, normalized]
+    );
+  };
+
   const handleAddCustomGenre = () => {
-    if (!customGenre.trim()) return;
-    
-    if (selectedGenres.includes(customGenre.trim())) {
+    const normalized = customGenre.trim();
+    if (!normalized) return;
+
+    if (selectedGenres.includes(normalized)) {
       toast.error("This genre is already added");
       return;
     }
 
-    setSelectedGenres([...selectedGenres, customGenre.trim()]);
+    setSelectedGenres((prev) => [...prev, normalized]);
     setCustomGenre("");
-    toast.success(`Added "${customGenre.trim()}" to your genres`);
+    toast.success(`Added "${normalized}" to your genres`);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedStall) {
       toast.error("Please select a stall first");
       return;
     }
-    if (selectedGenres.length === 0) {
-      toast.error("Please select at least one genre");
+
+    const trimmedSelection = selectedGenres.map((genre) => genre.trim()).filter(Boolean);
+
+    if (trimmedSelection.length === 0 && existingGenres.length === 0) {
+      toast.error("No genres to save for this stall");
       return;
     }
-    const stallName = BOOKED_STALLS.find(s => s.id === selectedStall)?.name;
-    toast.success(`Genres saved successfully for ${stallName}!`);
+
+    setIsSaving(true);
+    try {
+      if (trimmedSelection.length === 0) {
+        await genreApi.deleteAll(selectedStall);
+        toast.success("Removed all genres for this stall");
+      } else {
+        const existingMap = new Map(existingGenres.map((genre) => [genre.name, genre.id]));
+        const genresToAdd = trimmedSelection.filter((name) => !existingMap.has(name));
+        const genresToDelete = existingGenres.filter((genre) => !trimmedSelection.includes(genre.name));
+
+        if (genresToDelete.length) {
+          await Promise.all(
+            genresToDelete.map((genre) => genreApi.deleteGenre(selectedStall, genre.id))
+          );
+        }
+
+        if (genresToAdd.length) {
+          await genreApi.addGenres(selectedStall, genresToAdd);
+        }
+      }
+
+      toast.success("Genres updated successfully");
+      await loadGenresForStall(selectedStall);
+    } catch (error) {
+      console.error("Failed to update genres", error);
+      toast.error("Failed to update genres. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const handleClearAll = async () => {
+    if (!selectedStall) {
+      toast.error("Please select a stall first");
+      return;
+    }
+
+    if (!existingGenres.length && !selectedGenres.length) {
+      return;
+    }
+
+    if (!window.confirm("Remove all genres for this stall?")) {
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      await genreApi.deleteAll(selectedStall);
+      setExistingGenres([]);
+      setSelectedGenres([]);
+      toast.success("All genres removed for this stall");
+    } catch (error) {
+      console.error("Failed to remove genres", error);
+      toast.error("Failed to remove genres. Please try again.");
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const hasChanges = useMemo(() => {
+    const existingNames = existingGenres.map((genre) => genre.name).sort();
+    const selectedNames = [...selectedGenres].sort();
+
+    if (existingNames.length !== selectedNames.length) return true;
+    return existingNames.some((name, index) => name !== selectedNames[index]);
+  }, [existingGenres, selectedGenres]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-parchment to-background">
@@ -121,28 +263,39 @@ const Genres = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 Select which stall you want to configure genres for
               </p>
-              <div className="grid md:grid-cols-2 gap-3">
-                {BOOKED_STALLS.map((stall) => (
-                  <button
-                    key={stall.id}
-                    onClick={() => setSelectedStall(stall.id)}
-                    className={`relative p-4 rounded-lg border-2 transition-all duration-300 text-left hover:scale-105 ${
-                      selectedStall === stall.id
-                        ? "border-navy bg-navy/10 shadow-[var(--shadow-elegant)]"
-                        : "border-border bg-card hover:border-navy/50"
-                    }`}
-                  >
-                    {selectedStall === stall.id && (
-                      <CheckCircle2 className="absolute top-3 right-3 w-5 h-5 text-navy" />
-                    )}
-                    <div className="font-semibold text-foreground mb-1">{stall.name}</div>
-                    <div className="text-sm text-muted-foreground mb-2">{stall.section}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Booked: {new Date(stall.bookingDate).toLocaleDateString()}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {isLoadingStalls ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading your stalls...
+                </div>
+              ) : bookedStalls.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No reservations found yet.</p>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-3">
+                  {bookedStalls.map((stall) => (
+                    <button
+                      key={stall.id}
+                      onClick={() => handleSelectStall(stall.id)}
+                      className={`relative p-4 rounded-lg border-2 transition-all duration-300 text-left hover:scale-105 ${
+                        selectedStall === stall.id
+                          ? "border-navy bg-navy/10 shadow-[var(--shadow-elegant)]"
+                          : "border-border bg-card hover:border-navy/50"
+                      }`}
+                    >
+                      {selectedStall === stall.id && (
+                        <CheckCircle2 className="absolute top-3 right-3 w-5 h-5 text-navy" />
+                      )}
+                      <div className="font-semibold text-foreground mb-1">{stall.name}</div>
+                      <div className="text-sm text-muted-foreground mb-2">{stall.section ?? "Reserved"}</div>
+                      {stall.bookingDate && (
+                        <div className="text-xs text-muted-foreground">
+                          Booked: {new Date(stall.bookingDate).toLocaleDateString()}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </Card>
             <Card className="p-6 border-border shadow-[var(--shadow-elegant)] animate-fade-in">
               <h3 className="font-serif text-xl font-bold text-foreground mb-4">
@@ -190,21 +343,48 @@ const Genres = () => {
 
           {/* Summary Section */}
           <div>
-            <Card className="p-6 border-border shadow-[var(--shadow-elegant)] animate-fade-in-scale sticky top-24">
-              <h3 className="font-serif text-xl font-bold text-foreground mb-4">
-                Selected Genres
-              </h3>
+            <Card className="p-6 border-border shadow-[var(--shadow-elegant)] animate-fade-in-scale sticky top-24 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-serif text-xl font-bold text-foreground">Selected Genres</h3>
+                  <p className="text-xs text-muted-foreground">Changes are saved per stall.</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearAll}
+                  disabled={
+                    !selectedStall || isClearing || (selectedGenres.length === 0 && existingGenres.length === 0)
+                  }
+                >
+                  {isClearing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Clearing...
+                    </>
+                  ) : (
+                    "Clear all"
+                  )}
+                </Button>
+              </div>
 
-              <div className="mb-6">
+              <div className="mb-2">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-muted-foreground">Total Selected</span>
+                  <span className="text-sm text-muted-foreground">Total selected</span>
                   <span className="text-2xl font-bold text-burgundy">{selectedGenres.length}</span>
                 </div>
 
-                {selectedGenres.length === 0 ? (
+                {isLoadingGenres ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading genres...
+                  </div>
+                ) : selectedGenres.length === 0 ? (
                   <div className="text-center py-8">
                     <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-                    <p className="text-sm text-muted-foreground">No genres selected yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStall ? "No genres added yet" : "Select a stall to view genres"}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -226,11 +406,11 @@ const Genres = () => {
                 )}
               </div>
 
-              <div className="mb-4 p-3 bg-navy/5 rounded-lg border border-navy/20">
+              <div className="mb-2 p-3 bg-navy/5 rounded-lg border border-navy/20">
                 <div className="text-xs text-muted-foreground mb-1">Selected Stall:</div>
                 <div className="font-semibold text-foreground">
-                  {selectedStall 
-                    ? BOOKED_STALLS.find(s => s.id === selectedStall)?.name 
+                  {selectedStall
+                    ? bookedStalls.find((s) => s.id === selectedStall)?.name ?? `Stall ${selectedStall}`
                     : "No stall selected"}
                 </div>
               </div>
@@ -240,9 +420,16 @@ const Genres = () => {
                 size="lg"
                 className="w-full"
                 onClick={handleSave}
-                disabled={!selectedStall || selectedGenres.length === 0}
+                disabled={!selectedStall || (!hasChanges && !(selectedGenres.length === 0 && existingGenres.length > 0))}
               >
-                Save Genres
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Genres"
+                )}
               </Button>
 
               <div className="mt-6 pt-6 border-t border-border">

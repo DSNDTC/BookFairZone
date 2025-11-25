@@ -204,6 +204,11 @@ export interface StallLocationUpdatePayload {
   locationY: number;
 }
 
+export interface GenreResponse {
+  id: number;
+  name: string;
+}
+
 export const stallApi = {
   async fetchAll(): Promise<StallResponse[]> {
     const res = await api.get(`${STALL_SERVICE_URL}/api/stalls`);
@@ -223,6 +228,10 @@ export const stallApi = {
   },
   async updateLocations(payload: StallLocationUpdatePayload[]): Promise<unknown> {
     const res = await api.patch(`${STALL_SERVICE_URL}/api/stalls/locations`, payload);
+    return res.data;
+  },
+  async fetchById(id: number | string): Promise<StallResponse> {
+    const res = await api.get(`${STALL_SERVICE_URL}/api/stalls/${id}`);
     return res.data;
   },
 };
@@ -260,6 +269,24 @@ export const reservationApi = {
   async rejectReservation(reservationId: number): Promise<ReservationResponse> {
     const res = await api.post(`${API_GATEWAY_URL}/api/reservations/${reservationId}/reject`);
     return res.data;
+  },
+};
+
+export const genreApi = {
+  async getByStall(stallId: number | string): Promise<GenreResponse[]> {
+    const res = await api.get(`${STALL_SERVICE_URL}/api/stalls/${stallId}/genres`);
+    return res.data;
+  },
+  async addGenres(stallId: number | string, names: string[]): Promise<GenreResponse[]> {
+    const payload = names.map((name) => ({ name }));
+    const res = await api.post(`${STALL_SERVICE_URL}/api/stalls/${stallId}/genres`, payload);
+    return res.data;
+  },
+  async deleteGenre(stallId: number | string, genreId: number | string): Promise<void> {
+    await api.delete(`${STALL_SERVICE_URL}/api/stalls/${stallId}/genres/${genreId}`);
+  },
+  async deleteAll(stallId: number | string): Promise<void> {
+    await api.delete(`${STALL_SERVICE_URL}/api/stalls/${stallId}/genres`);
   },
 };
 
