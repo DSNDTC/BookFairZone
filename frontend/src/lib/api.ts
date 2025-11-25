@@ -3,6 +3,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosE
 // Base URL for the security service
 const SECURITY_SERVICE_URL = import.meta.env.VITE_SECURITY_SERVICE_URL || 'http://localhost:8082';
 const STALL_SERVICE_URL = import.meta.env.VITE_STALL_SERVICE_URL || 'http://localhost:8075';
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080';
 
 // Create axios instance with base config
 const api: AxiosInstance = axios.create({
@@ -222,6 +223,34 @@ export const stallApi = {
   },
   async updateLocations(payload: StallLocationUpdatePayload[]): Promise<unknown> {
     const res = await api.patch(`${STALL_SERVICE_URL}/api/stalls/locations`, payload);
+    return res.data;
+  },
+};
+
+export interface ReservationRequest {
+  stallId: number;
+}
+
+export interface ReservationResponse {
+  id: number;
+  stallId: number;
+  userId: string;
+  userEmail: string;
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED';
+  createdAt: string;
+}
+
+export const reservationApi = {
+  async createReservation(stallId: number): Promise<ReservationResponse> {
+    const res = await api.post(`${API_GATEWAY_URL}/api/reservations`, { stallId });
+    return res.data;
+  },
+  async getMyReservations(): Promise<ReservationResponse[]> {
+    const res = await api.get(`${API_GATEWAY_URL}/api/reservations/my-reservations`);
+    return res.data;
+  },
+  async getAllReservations(): Promise<ReservationResponse[]> {
+    const res = await api.get(`${API_GATEWAY_URL}/api/reservations`);
     return res.data;
   },
 };

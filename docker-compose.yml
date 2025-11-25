@@ -169,6 +169,7 @@ services:
      RESERVATION_SERVICE_URI: http://reservation-service:8085
      STALL_SERVICE_URI: http://stall-service:8080
      USER_SERVICE_URI: http://user-service:8084
+     CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
    networks:
      - app-network
    healthcheck:
