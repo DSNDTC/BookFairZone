@@ -276,6 +276,9 @@ services:
         SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
         SPRING_KAFKA_CONSUMER_GROUP_ID: email-service-group       
         # Mail Configuration (Ensure these are set in your .env file)
+
+        APP_KAFKA_TOPIC_NOTIFICATION: reservation.confirmed.events
+
         SPRING_MAIL_HOST: ${MAIL_HOST}
         SPRING_MAIL_PORT: ${MAIL_PORT}
         SPRING_MAIL_USERNAME: ${MAIL_USERNAME}

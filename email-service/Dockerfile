@@ -1,3 +1,21 @@
+# # STAGE 1: Build api-gateway (Gradle)
+# FROM gradle:8.4.0-jdk21 AS builder
+
+# WORKDIR /workspace
+
+# # --- STEP 1: Build and Publish Shared Library ---
+# # Copy library files
+# COPY bookfair-contracts/build.gradle ./bookfair-contracts/
+# COPY bookfair-contracts/src ./bookfair-contracts/src
+
+# # Switch to library folder
+# WORKDIR /workspace/bookfair-contracts
+
+# # Create temp settings and publish to local maven (inside the container)
+# RUN echo "rootProject.name = 'bookfair-contracts'" > settings.gradle
+# RUN gradle publishToMavenLocal --no-daemon
+
+
 # STAGE 1: Build 'bookfair-contracts' (Gradle)
 FROM gradle:8.4.0-jdk21 AS contracts-builder
 
