@@ -14,6 +14,8 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
+EXPOSE 8096
+
 
 COPY --from=build /app/target/*.jar user-service.jar
 

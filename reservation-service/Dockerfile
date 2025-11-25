@@ -31,14 +31,14 @@ RUN apk add --no-cache curl
 WORKDIR /app
 
 # This port MUST match your reservation-service's port
-EXPOSE 8085
+EXPOSE 8093
 
 # Copy the built JAR from the 'builder' stage
 COPY --from=builder /workspace/reservation-service/build/libs/*.jar app.jar
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8085/actuator/health || exit 1
+  CMD curl -f http://localhost:8093/actuator/health || exit 1
 
 # Run the application
 ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]

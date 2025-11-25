@@ -5,10 +5,6 @@ FROM gradle:8.4.0-jdk21 AS contracts-builder
 
 WORKDIR /workspace
 
-# Copy ALL necessary Gradle files from the root context
-COPY gradlew /workspace/
-COPY gradle/ /workspace/gradle/
-COPY settings.gradle /workspace/
 # Copy only the module we need to build
 COPY bookfair-contracts/ /workspace/bookfair-contracts/
 
@@ -50,14 +46,14 @@ RUN apk add --no-cache curl
 WORKDIR /app
 
 # This port MUST match your email-service's port
-EXPOSE 8081
+EXPOSE 8091
 
 # Copy the built JAR from the 'builder' stage
 COPY --from=builder /app/target/*.jar app.jar
 
 # Healthcheck to see if the Spring Boot app is ready
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8081/actuator/health || exit 1
+  CMD curl -f http://localhost:8091/actuator/health || exit 1
 
 # Run the application
 ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]

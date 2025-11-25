@@ -44,7 +44,7 @@ public class ReservationController {
                 "Your reservation has been created.",
                 "CREATED"
         );
-        notificationEventProducer.sendReservationEvent(event);
+        notificationEventProducer.sendReservationConfirmedEvent(event);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -63,7 +63,7 @@ public class ReservationController {
                 "Your reservation has been confirmed.",
                 "CONFIRMED"
         );
-        notificationEventProducer.sendReservationEvent(event);
+        notificationEventProducer.sendReservationConfirmedEvent(event);
         return ResponseEntity.ok(response);
     }
 

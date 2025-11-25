@@ -57,9 +57,9 @@ const EmployeePortal = () => {
   const handleMarkAsRead = (id: string) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
   };
+
   const handleClearAll = () => {
     setNotifications([]);
-  };
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -76,9 +76,9 @@ const EmployeePortal = () => {
     } finally {
       setIsLoggingOut(false);
     }
+
   };
 
-  // Mock data (in real app this would come from API)
   const mockReservations: Reservation[] = [
     {
       id: "R001",
@@ -123,7 +123,7 @@ const EmployeePortal = () => {
       res.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       res.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
       res.email.toLowerCase().includes(searchQuery.toLowerCase());
-
+    
     const matchesFilter = filterStatus === "all" || res.status === filterStatus;
 
     return matchesSearch && matchesFilter;
@@ -160,7 +160,7 @@ const EmployeePortal = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <NotificationBell
+              <NotificationBell 
                 notifications={notifications}
                 onMarkAsRead={handleMarkAsRead}
                 onClearAll={handleClearAll}
@@ -315,4 +315,3 @@ const EmployeePortal = () => {
 };
 
 export default EmployeePortal;
-
