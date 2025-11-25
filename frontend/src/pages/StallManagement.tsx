@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { NotificationBell } from "@/components/NotificationBell";
 import { EditableVenueMap, Stall as MapStall } from "@/components/EditableVenueMap";
+import { stallApi } from '@/lib/api';
 
 interface Stall {
   id: string;
@@ -33,6 +34,7 @@ interface Notification {
 }
 
 const StallManagement = () => {
+  const [activeTab, setActiveTab] = useState<'list' | 'map'>('list');
   const [stalls, setStalls] = useState<Stall[]>([
     { id: "1", name: "A1", size: "large", price: 50000, status: "available", x: 70, y: 150, width: 160, height: 100 },
     { id: "2", name: "A2", size: "large", price: 50000, status: "reserved", x: 250, y: 150, width: 160, height: 100 },
@@ -49,6 +51,7 @@ const StallManagement = () => {
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [pendingMoves, setPendingMoves] = useState<Record<string, { x?: number; y?: number }>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [editingStall, setEditingStall] = useState<Stall | null>(null);
   const [formData, setFormData] = useState({
@@ -57,39 +60,85 @@ const StallManagement = () => {
     price: 20000,
   });
 
-  const handleCreateStall = () => {
-    const sizeConfig = { small: { width: 80, height: 60 }, medium: { width: 120, height: 80 }, large: { width: 160, height: 100 } };
-    const config = sizeConfig[formData.size];
-    
-    const newStall: Stall = {
-      id: (stalls.length + 1).toString(),
-      name: formData.name,
-      size: formData.size,
-      price: formData.price,
-      status: "available",
-      x: 100 + (stalls.length * 30),
-      y: 150 + ((stalls.length % 3) * 120),
-      width: config.width,
-      height: config.height,
+  // Load stalls from backend
+  const loadStalls = async () => {
+    try {
+      const data = await stallApi.fetchAll();
+      // Map server stalls to local Stall shape
+      const mapped: Stall[] = data.map((s: any) => ({
+        id: String(s.id),
+        name: s.code,
+        size: (s.size || 'SMALL').toLowerCase(),
+        price: Number(s.price),
+        status: s.isReserved ? 'reserved' : 'available',
+        x: Number(s.locationX),
+        y: Number(s.locationY),
+        width: s.size === 'LARGE' ? 160 : s.size === 'MEDIUM' ? 120 : 80,
+        height: s.size === 'LARGE' ? 100 : s.size === 'MEDIUM' ? 80 : 60,
+      }));
+
+      setStalls(mapped);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load stalls');
+    }
+  };
+
+  // Load on mount
+  useEffect(() => {
+    loadStalls();
+  }, []);
+
+  const handleCreateStall = async () => {
+    // Prepare payload
+    const payload = {
+      code: formData.name,
+      size: formData.size.toUpperCase(),
+      price: String(formData.price),
+      isReserved: false,
+      locationX: String(100),
+      locationY: String(100),
     };
-    setStalls([...stalls, newStall]);
-    setShowCreateDialog(false);
-    setFormData({ name: "", size: "small", price: 20000 });
-    toast.success("Stall created successfully! You can drag it on the map to position it.");
-    
-    // Add notification
-    const newNotification: Notification = {
-      id: Date.now().toString(),
-      title: "Stall Created",
-      message: `New stall ${formData.name} has been created`,
-      time: "Just now",
-      read: false,
-    };
-    setNotifications([newNotification, ...notifications]);
+
+    try {
+      const created = await stallApi.create(payload);
+
+      // Map to local Stall and add
+      const sizeUpper = payload.size;
+      const newLocal: Stall = {
+        id: String(created.id || Date.now()),
+        name: created.code || formData.name,
+        size: (created.size || sizeUpper).toLowerCase(),
+        price: Number(created.price || formData.price),
+        status: created.isReserved ? 'reserved' : 'available',
+        x: Number(created.locationX || 100),
+        y: Number(created.locationY || 100),
+        width: sizeUpper === 'LARGE' ? 160 : sizeUpper === 'MEDIUM' ? 120 : 80,
+        height: sizeUpper === 'LARGE' ? 100 : sizeUpper === 'MEDIUM' ? 80 : 60,
+      };
+
+      setStalls(prev => [newLocal, ...prev]);
+      setShowCreateDialog(false);
+      setFormData({ name: "", size: "small", price: 20000 });
+      toast.success('Stall created successfully');
+
+      const newNotification: Notification = {
+        id: Date.now().toString(),
+        title: 'Stall Created',
+        message: `New stall ${newLocal.name} has been created`,
+        time: 'Just now',
+        read: false,
+      };
+      setNotifications(prev => [newNotification, ...prev]);
+    } catch (err:any) {
+      console.error(err);
+      toast.error('Failed to create stall');
+    }
   };
 
   const handleMapStallsChange = (updatedStalls: MapStall[]) => {
-    setStalls(updatedStalls.map(s => ({
+    // Update local positions first
+    const updatedLocal = updatedStalls.map(s => ({
       id: s.id,
       name: s.name,
       size: s.size,
@@ -99,12 +148,64 @@ const StallManagement = () => {
       y: s.y,
       width: s.width,
       height: s.height,
-    })));
+    }));
+
+    // Detect changed stalls by comparing previous coordinates
+    const changed = updatedLocal.filter(us => {
+      const prev = stalls.find(s => s.id === us.id);
+      return prev && (prev.x !== us.x || prev.y !== us.y);
+    });
+
+    setStalls(updatedLocal);
+
+    // Record pending moves (do NOT call API here). User will click Save to persist.
+    if (changed.length > 0) {
+      setPendingMoves(prev => {
+        const next = { ...prev };
+        changed.forEach(c => {
+          next[c.id] = { x: c.x, y: c.y };
+        });
+        return next;
+      });
+    }
+  };
+
+  const savePendingMoves = async () => {
+    const entries = Object.entries(pendingMoves);
+    if (entries.length === 0) return;
+
+    try {
+      const body = entries.map(([id, pos]) => ({
+        id: Number(id),
+        locationX: Number(pos?.x ?? 0),
+        locationY: Number(pos?.y ?? 0),
+      }));
+
+      await stallApi.updateLocations(body);
+
+      toast.success('Positions saved');
+      setPendingMoves({});
+      await loadStalls();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save stall positions');
+      await loadStalls();
+    }
+  };
+
+  const cancelPendingMoves = async () => {
+    setPendingMoves({});
+    await loadStalls();
   };
 
   const handleEditStall = () => {
     if (!editingStall) return;
-    setStalls(stalls.map(s => s.id === editingStall.id ? { ...s, ...formData } : s));
+    setStalls(stalls.map(s => s.id === editingStall.id ? {
+      ...s,
+      name: formData.name,
+      size: formData.size,
+      price: formData.price,
+    } : s));
     setShowEditDialog(false);
     setEditingStall(null);
     toast.success("Stall updated successfully!");
@@ -132,7 +233,7 @@ const StallManagement = () => {
 
   const openEditDialog = (stall: Stall) => {
     setEditingStall(stall);
-    setFormData({ name: stall.name, size: stall.size, price: stall.price });
+    setFormData(prev => ({ ...prev, name: stall.name, size: stall.size, price: stall.price }));
     setShowEditDialog(true);
   };
 
@@ -180,7 +281,7 @@ const StallManagement = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="list" className="w-full">
+        <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as 'list' | 'map')} className="w-full">
           <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
             <TabsList>
               <TabsTrigger value="list">List View</TabsTrigger>
@@ -191,19 +292,34 @@ const StallManagement = () => {
             </TabsList>
             
             <div className="flex items-center gap-4 flex-1 max-w-2xl">
-              <div className="relative flex-1">
+                <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   placeholder="Search stalls..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Button onClick={() => setShowCreateDialog(true)} variant="elegant">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Stall
-              </Button>
+              {activeTab === 'map' && (
+                <div className="flex items-center gap-2">
+                  {Object.keys(pendingMoves).length > 0 && (
+                    <>
+                      <Button variant="outline" onClick={savePendingMoves} disabled={Object.keys(pendingMoves).length === 0}>
+                        Save Changes
+                      </Button>
+                      <Button variant="ghost" onClick={cancelPendingMoves}>
+                        Cancel Changes
+                      </Button>
+                    </>
+                  )}
+
+                  <Button onClick={() => setShowCreateDialog(true)} variant="elegant">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Stall
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -278,7 +394,7 @@ const StallManagement = () => {
                 id="name"
                 placeholder="e.g., A1, B2"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -300,9 +416,10 @@ const StallManagement = () => {
                 id="price"
                 type="number"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
               />
             </div>
+            {/* vendorId removed - not required for stall management */}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
@@ -327,7 +444,7 @@ const StallManagement = () => {
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -349,7 +466,7 @@ const StallManagement = () => {
                 id="edit-price"
                 type="number"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
               />
             </div>
           </div>
