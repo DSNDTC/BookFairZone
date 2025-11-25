@@ -259,23 +259,32 @@ services:
 #    networks:
 #      - app-network
 
-#  email-service:
-#    build:
-#      context: .
-#      dockerfile: email-service/Dockerfile
-#    container_name: email-service
-#    ports:
-#      - "8081:8081"
-#    depends_on:
-#      kafka:
-#        condition: service_started
-#    environment:
-#      # This OVERRIDES the value in application.properties
-#      # It correctly points to the internal Kafka listener
-#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-#      # Your application properties
-#      SERVER_PORT: 8081
-#      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
+  email-service:
+      build:
+        context: .
+        dockerfile: email-service/Dockerfile
+      container_name: email-service
+      ports:
+        - "8081:8081"
+      depends_on:
+        kafka:
+          condition: service_started
+      environment:
+        # Server Config
+        SERVER_PORT: 8081       
+        # Kafka Config (Internal Docker Network)
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+        SPRING_KAFKA_CONSUMER_GROUP_ID: email-service-group       
+        # Mail Configuration (Ensure these are set in your .env file)
+        SPRING_MAIL_HOST: ${MAIL_HOST}
+        SPRING_MAIL_PORT: ${MAIL_PORT}
+        SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+        SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+        SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+        SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"      
+      networks:
+        - app-network
+
 #
 #  notification-service:
 #    build:
