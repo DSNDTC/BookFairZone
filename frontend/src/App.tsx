@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 // EmployeeLogin removed - using unified login with role-based routing
 import EmployeePortal from "./pages/EmployeePortal";
 import Dashboard from "./pages/Dashboard";
+import UserProfile from "./pages/UserProfile";
 import Genres from "./pages/Genres";
 import Reservations from "./pages/Reservations";
 import StallManagement from "./pages/StallManagement";
@@ -83,6 +84,15 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE']}>
+                <UserProfile />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/stall-management"
             element={
