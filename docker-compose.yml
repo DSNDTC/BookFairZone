@@ -214,43 +214,6 @@ services:
      timeout: 10s
      start_period: 60s
      retries: 3
-#
-#  mysql:
-#    image: mysql:8.0
-#    container_name: stall_mysql
-#    restart: always
-#    environment:
-#      MYSQL_ROOT_PASSWORD: rootpass
-#      MYSQL_DATABASE: stall_db
-#    ports:
-#      - "3307:3306"
-#    volumes:
-#      - mysql-data:/var/lib/mysql
-#    networks:
-#      - app-network
-#    healthcheck:
-#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
-#      start_period: 30s
-#
-#  stall-service:
-#    build:
-#      context: .
-#      dockerfile: ./stall-service/Dockerfile
-#    container_name: stall_service
-#    depends_on:
-#      mysql:
-#        condition: service_healthy
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/stall_db?useSSL=false&allowPublicKeyRetrieval=true
-#      SPRING_DATASOURCE_USERNAME: root
-#      SPRING_DATASOURCE_PASSWORD: rootpass
-#    ports:
-#      - "8086:8080"
-#    networks:
-#      - app-network
 
   email-service:
       build:
@@ -280,6 +243,14 @@ services:
         SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"      
       networks:
         - app-network
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+        interval: 30s
+        timeout: 10s
+        start_period: 60s
+        retries: 3
+
   notification-service:
     build:
       context: .
@@ -322,7 +293,7 @@ services:
         echo 'Waiting for Kafka to be ready...'
         cub kafka-ready -b kafka:29092 1 60
         echo 'Kafka is ready!'
-        kafka-console-consumer --bootstrap-server kafka:29092 --topic user.registered.events --from-beginning
+        kafka-console-consumer --bootstrap-server kafka:29092 --topic reservation.confirmed.events --from-beginning
       "
     networks:
       - app-network
