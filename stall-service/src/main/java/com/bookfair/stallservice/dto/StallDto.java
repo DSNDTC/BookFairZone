@@ -23,6 +23,6 @@ public class StallDto {
 
     private Boolean isReserved = false;
 
-    private Integer locationX;
-    private Integer locationY;
+    private Double locationX;
+    private Double locationY;
 }

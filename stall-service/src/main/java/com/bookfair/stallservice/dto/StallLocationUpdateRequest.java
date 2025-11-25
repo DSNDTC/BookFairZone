@@ -16,9 +16,9 @@ public class StallLocationUpdateRequest {
     private Long id;
 
     @NotNull(message = "locationX is required")
-    private Integer locationX;
+    private Double locationX;
 
     @NotNull(message = "locationY is required")
-    private Integer locationY;
+    private Double locationY;
 }
 
