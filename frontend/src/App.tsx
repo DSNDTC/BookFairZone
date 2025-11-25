@@ -86,7 +86,7 @@ const App = () => (
           <Route
             path="/stall-management"
             element={
-              <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE']}>
+              <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE', 'ADMIN_ROLE', 'ADMIN']}>
                 <StallManagement />
               </ProtectedRoute>
             }
