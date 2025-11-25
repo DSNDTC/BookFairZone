@@ -81,8 +81,6 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bookfair.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
       ADMIN_AUTO_CREATE: ${ADMIN_AUTO_CREATE:-true}
-
-
     ports:
       - "8082:8080"
     networks:
@@ -272,27 +270,35 @@ services:
 #      SERVER_PORT: 8081
 #      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
 #
-#  notification-service:
-#    build:
-#      context: .
-#      dockerfile: notification-service/Dockerfile
-#    container_name: notification-service
-#    ports:
-#      # Maps your host port 8083 to the container's port 8083
-#      - "8083:8083"
-#    depends_on:
-#      kafka:
-#        condition: service_started
-#    environment:
-#      # This OVERRIDES the value in application.properties
-#      # It correctly points to the internal Kafka listener
-#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-#      # Your application properties
-#      SERVER_PORT: 8083
-#      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
-#      # Placeholders for your API keys
-#      SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
-#      SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    ports:
+      # Maps your host port 8083 to the container's port 8092
+      - "8092:8092"
+    depends_on:
+      kafka:
+        condition: service_started
+    environment:
+      # This OVERRIDES the value in application.properties
+      # It correctly points to the internal Kafka listener
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # Your application properties
+      SERVER_PORT: 8092
+      APP_KAFKA_TOPIC_NOTIFICATION: reservation-topic
+      # Placeholders for your API keys
+      SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
+      SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8092/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
 
   kafka-consumer:
     image: confluentinc/cp-kafka:7.3.0
@@ -315,7 +321,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - "8090:8080"
+      - "8095:8080"
     depends_on:
       - kafka
       - zookeeper
