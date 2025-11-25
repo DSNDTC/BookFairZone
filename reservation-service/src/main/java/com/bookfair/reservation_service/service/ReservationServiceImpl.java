@@ -106,7 +106,7 @@ public class ReservationServiceImpl implements ReservationService {
                 "Your reservation has been confirmed.",
                 "CONFIRMED"
         );
-        notificationEventProducer.sendReservationConfirmedEvent(notificationEvent);
+        notificationEventProducer.sendReservationEvent(notificationEvent);
 
         return ReservationResponse.fromEntity(savedReservation);
     }
