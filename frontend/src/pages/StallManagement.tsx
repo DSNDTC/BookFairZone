@@ -34,15 +34,15 @@ interface Notification {
 }
 
 const StallManagement = () => {
-  const [activeTab, setActiveTab] = useState<'list' | 'map'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'map'>('map');
   const [stalls, setStalls] = useState<Stall[]>([
-    { id: "1", name: "A1", size: "large", price: 50000, status: "available", x: 70, y: 150, width: 160, height: 100 },
-    { id: "2", name: "A2", size: "large", price: 50000, status: "reserved", x: 250, y: 150, width: 160, height: 100 },
-    { id: "3", name: "B1", size: "medium", price: 35000, status: "available", x: 650, y: 150, width: 120, height: 80 },
-    { id: "4", name: "B2", size: "medium", price: 35000, status: "available", x: 800, y: 150, width: 120, height: 80 },
-    { id: "5", name: "C1", size: "small", price: 20000, status: "available", x: 70, y: 280, width: 80, height: 60 },
-    { id: "6", name: "C2", size: "small", price: 20000, status: "available", x: 170, y: 280, width: 80, height: 60 },
-  ]);
+  //   { id: "1", name: "A1", size: "large", price: 50000, status: "available", x: 70, y: 150, width: 160, height: 100 },
+  //   { id: "2", name: "A2", size: "large", price: 50000, status: "reserved", x: 250, y: 150, width: 160, height: 100 },
+  //   { id: "3", name: "B1", size: "medium", price: 35000, status: "available", x: 650, y: 150, width: 120, height: 80 },
+  //   { id: "4", name: "B2", size: "medium", price: 35000, status: "available", x: 800, y: 150, width: 120, height: 80 },
+  //   { id: "5", name: "C1", size: "small", price: 20000, status: "available", x: 70, y: 280, width: 80, height: 60 },
+  //   { id: "6", name: "C2", size: "small", price: 20000, status: "available", x: 170, y: 280, width: 80, height: 60 },
+   ]);
 
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: "1", title: "New Reservation", message: "ABC Publishers reserved stall A2", time: "5 min ago", read: false },
@@ -51,6 +51,8 @@ const StallManagement = () => {
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
   const [pendingMoves, setPendingMoves] = useState<Record<string, { x?: number; y?: number }>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [editingStall, setEditingStall] = useState<Stall | null>(null);
@@ -156,9 +158,10 @@ const StallManagement = () => {
       return prev && (prev.x !== us.x || prev.y !== us.y);
     });
 
+    // Update UI immediately
     setStalls(updatedLocal);
 
-    // Record pending moves (do NOT call API here). User will click Save to persist.
+    // Record pending moves (do NOT call API here). User will click Save to persist moved stalls.
     if (changed.length > 0) {
       setPendingMoves(prev => {
         const next = { ...prev };
@@ -167,6 +170,50 @@ const StallManagement = () => {
         });
         return next;
       });
+    }
+
+  };
+
+  const handleAddStallFromMap = async (stall: {
+    name: string;
+    size: "small" | "medium" | "large";
+    price: number;
+    x: number;
+    y: number;
+  }) => {
+    const payload = {
+      code: stall.name,
+      size: stall.size.toUpperCase(),
+      price: String(stall.price),
+      isReserved: false,
+      locationX: String(stall.x),
+      locationY: String(stall.y),
+    };
+
+    try {
+      const created = await stallApi.create(payload);
+      const sizeLower = (created.size || stall.size).toLowerCase() as Stall["size"];
+      const width = sizeLower === "large" ? 160 : sizeLower === "medium" ? 120 : 80;
+      const height = sizeLower === "large" ? 100 : sizeLower === "medium" ? 80 : 60;
+
+      const newStall: Stall = {
+        id: String(created.id ?? Date.now()),
+        name: created.code || stall.name,
+        size: sizeLower,
+        price: Number(created.price ?? stall.price),
+        status: created.isReserved ? "reserved" : "available",
+        x: Number(created.locationX ?? stall.x),
+        y: Number(created.locationY ?? stall.y),
+        width,
+        height,
+      };
+
+      setStalls(prev => [...prev, newStall]);
+      toast.success(`Stall ${newStall.name} created`);
+    } catch (err) {
+      console.error("Failed to create stall from map", err);
+      toast.error("Failed to create stall");
+      throw err;
     }
   };
 
@@ -198,37 +245,94 @@ const StallManagement = () => {
     await loadStalls();
   };
 
-  const handleEditStall = () => {
+  const handleEditStall = async () => {
     if (!editingStall) return;
-    setStalls(stalls.map(s => s.id === editingStall.id ? {
-      ...s,
-      name: formData.name,
-      size: formData.size,
-      price: formData.price,
-    } : s));
-    setShowEditDialog(false);
-    setEditingStall(null);
-    toast.success("Stall updated successfully!");
-    
-    // Add notification
-    const newNotification: Notification = {
-      id: Date.now().toString(),
-      title: "Stall Updated",
-      message: `Stall ${formData.name} has been updated`,
-      time: "Just now",
-      read: false,
+
+    // Build payload for API
+    const payload = {
+      code: formData.name,
+      size: formData.size.toUpperCase(),
+      price: String(formData.price),
+      isReserved: editingStall.status === 'reserved',
+      locationX: String(editingStall.x ?? 0),
+      locationY: String(editingStall.y ?? 0),
     };
-    setNotifications([newNotification, ...notifications]);
+
+    try {
+      const idNum = Number(editingStall.id);
+      let updated: any = null;
+
+      if (!Number.isNaN(idNum)) {
+        updated = await stallApi.update(idNum, payload);
+      }
+
+      // Map server response (or local form) back to local Stall shape
+      const sizeLower = (updated?.size || payload.size).toLowerCase() as Stall['size'];
+      const width = sizeLower === 'large' ? 160 : sizeLower === 'medium' ? 120 : 80;
+      const height = sizeLower === 'large' ? 100 : sizeLower === 'medium' ? 80 : 60;
+
+      const updatedLocal: Stall = {
+        id: String(updated?.id ?? editingStall.id),
+        name: updated?.code ?? formData.name,
+        size: sizeLower,
+        price: Number(updated?.price ?? formData.price),
+        status: updated?.isReserved ? 'reserved' : editingStall.status,
+        x: Number(updated?.locationX ?? editingStall.x ?? 0),
+        y: Number(updated?.locationY ?? editingStall.y ?? 0),
+        width,
+        height,
+      };
+
+      setStalls(prev => prev.map(s => s.id === editingStall.id ? updatedLocal : s));
+      setShowEditDialog(false);
+      setEditingStall(null);
+      toast.success("Stall updated successfully!");
+
+      // Add notification
+      const newNotification: Notification = {
+        id: Date.now().toString(),
+        title: "Stall Updated",
+        message: `Stall ${updatedLocal.name} has been updated`,
+        time: "Just now",
+        read: false,
+      };
+      setNotifications([newNotification, ...notifications]);
+    } catch (err) {
+      console.error('Failed to update stall', err);
+      toast.error('Failed to update stall');
+    }
   };
 
-  const handleDeleteStall = (id: string) => {
+  const handleDeleteStall = async (id: string) => {
     const stall = stalls.find(s => s.id === id);
     if (stall?.status === "reserved") {
       toast.error("Cannot delete reserved stall");
       return;
     }
-    setStalls(stalls.filter(s => s.id !== id));
-    toast.success("Stall deleted successfully!");
+
+    try {
+      const numericId = Number(id);
+      if (!Number.isNaN(numericId)) {
+        await stallApi.delete(numericId);
+      }
+
+      setStalls(prev => prev.filter(s => s.id !== id));
+      setPendingMoves(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+
+      toast.success("Stall deleted successfully!");
+    } catch (err) {
+      console.error('Failed to delete stall', err);
+      toast.error('Failed to delete stall');
+    }
+  };
+
+  const requestDeleteFromMap = (id: string) => {
+    setDeleteCandidateId(id);
+    setShowDeleteConfirm(true);
   };
 
   const openEditDialog = (stall: Stall) => {
@@ -284,11 +388,11 @@ const StallManagement = () => {
         <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as 'list' | 'map')} className="w-full">
           <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
             <TabsList>
-              <TabsTrigger value="list">List View</TabsTrigger>
               <TabsTrigger value="map">
                 <Map className="w-4 h-4 mr-2" />
                 Map Editor
               </TabsTrigger>
+              <TabsTrigger value="list">List View</TabsTrigger>
             </TabsList>
             
             <div className="flex items-center gap-4 flex-1 max-w-2xl">
@@ -358,7 +462,7 @@ const StallManagement = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteStall(stall.id)}
+                      onClick={() => { setDeleteCandidateId(stall.id); setShowDeleteConfirm(true); }}
                       disabled={stall.status === "reserved"}
                       className="flex-1"
                     >
@@ -375,6 +479,9 @@ const StallManagement = () => {
             <EditableVenueMap 
               stalls={stalls as MapStall[]}
               onStallsChange={handleMapStallsChange}
+              onAddStall={handleAddStallFromMap}
+              onRequestDelete={requestDeleteFromMap}
+              onDeleteStall={handleDeleteStall}
               editable={true}
             />
           </TabsContent>
@@ -476,6 +583,32 @@ const StallManagement = () => {
             </Button>
             <Button variant="elegant" onClick={handleEditStall}>
               Update Stall
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog (List view) */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to delete this stall? This action cannot be undone.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowDeleteConfirm(false); setDeleteCandidateId(null); }}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={async () => {
+              if (deleteCandidateId) {
+                await handleDeleteStall(deleteCandidateId);
+              }
+              setShowDeleteConfirm(false);
+              setDeleteCandidateId(null);
+            }}>
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
