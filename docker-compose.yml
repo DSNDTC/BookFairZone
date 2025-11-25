@@ -214,62 +214,7 @@ services:
      timeout: 10s
      start_period: 60s
      retries: 3
-#
-#  mysql:
-#    image: mysql:8.0
-#    container_name: stall_mysql
-#    restart: always
-#    environment:
-#      MYSQL_ROOT_PASSWORD: rootpass
-#      MYSQL_DATABASE: stall_db
-#    ports:
-#      - "3307:3306"
-#    volumes:
-#      - mysql-data:/var/lib/mysql
-#    networks:
-#      - app-network
-#    healthcheck:
-#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
-#      start_period: 30s
-#
-#  stall-service:
-#    build:
-#      context: .
-#      dockerfile: ./stall-service/Dockerfile
-#    container_name: stall_service
-#    depends_on:
-#      mysql:
-#        condition: service_healthy
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/stall_db?useSSL=false&allowPublicKeyRetrieval=true
-#      SPRING_DATASOURCE_USERNAME: root
-#      SPRING_DATASOURCE_PASSWORD: rootpass
-#    ports:
-#      - "8086:8080"
-#    networks:
-#      - app-network
 
-#  email-service:
-#    build:
-#      context: .
-#      dockerfile: email-service/Dockerfile
-#    container_name: email-service
-#    ports:
-#      - "8081:8081"
-#    depends_on:
-#      kafka:
-#        condition: service_started
-#    environment:
-#      # This OVERRIDES the value in application.properties
-#      # It correctly points to the internal Kafka listener
-#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-#      # Your application properties
-#      SERVER_PORT: 8081
-#      SPRING_KAFKA_TOPIC_NAME: reservation.confirmed.events
-#
   notification-service:
     build:
       context: .
