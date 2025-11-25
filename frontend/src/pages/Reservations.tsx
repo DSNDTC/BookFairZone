@@ -7,7 +7,7 @@ import { BookOpen, ArrowLeft, MapPin, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { EditableVenueMap, Stall as MapStall } from "@/components/EditableVenueMap";
 import { NotificationBell } from "@/components/NotificationBell";
-import { stallApi } from "@/lib/api";
+import { stallApi, reservationApi } from "@/lib/api";
 
 type StallSize = "small" | "medium" | "large";
 type StallStatus = "available" | "reserved" | "selected";
@@ -103,26 +103,43 @@ const Reservations = () => {
     setShowConfirmDialog(true);
   };
 
-  const handleFinalizeReservation = () => {
-    setStalls(
-      stalls.map((stall) =>
-        selectedStalls.includes(stall.id) ? { ...stall, status: "reserved" as StallStatus } : stall
-      )
-    );
-    
-    // Add notification
-    const newNotification: Notification = {
-      id: Date.now().toString(),
-      title: "Reservation Confirmed",
-      message: `Successfully reserved ${selectedStalls.length} stall(s). Total: LKR ${totalCost.toLocaleString()}`,
-      time: "Just now",
-      read: false,
-    };
-    setNotifications([newNotification, ...notifications]);
-    
-    setSelectedStalls([]);
-    setShowConfirmDialog(false);
-    toast.success("Reservation confirmed! Check your email for details.");
+  const handleFinalizeReservation = async () => {
+    try {
+      // Call the reservation API for each selected stall
+      const reservationPromises = selectedStalls.map((stallId) =>
+        reservationApi.createReservation(Number(stallId))
+      );
+
+      const results = await Promise.all(reservationPromises);
+      
+      // Update stalls status locally
+      setStalls(
+        stalls.map((stall) =>
+          selectedStalls.includes(stall.id) ? { ...stall, status: "reserved" as StallStatus } : stall
+        )
+      );
+      
+      // Add notification
+      const newNotification: Notification = {
+        id: Date.now().toString(),
+        title: "Reservation Confirmed",
+        message: `Successfully reserved ${selectedStalls.length} stall(s). Total: LKR ${totalCost.toLocaleString()}`,
+        time: "Just now",
+        read: false,
+      };
+      setNotifications([newNotification, ...notifications]);
+      
+      setSelectedStalls([]);
+      setShowConfirmDialog(false);
+      toast.success("Reservation confirmed! Check your email for details.");
+      
+      // Reload stalls to get updated status from backend
+      await loadStalls();
+    } catch (error: any) {
+      console.error("Reservation error:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to create reservation";
+      toast.error(errorMessage);
+    }
   };
 
   const handleMarkAsRead = (id: string) => {
