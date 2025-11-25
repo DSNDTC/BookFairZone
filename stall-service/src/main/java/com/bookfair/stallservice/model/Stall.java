@@ -29,9 +29,6 @@ public class Stall {
     @Column(nullable = false)
     private Double price;
 
-    @Column(name = "vendor_id", nullable = false)
-    private Long vendorId;
-
     @Column(name = "is_reserved", nullable = false)
     private Boolean isReserved = false;
 
