@@ -61,7 +61,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Link to="/reservations">
+              <Link to="/my-reservations">
                 <Button variant="outline" size="sm">
                   <Calendar className="w-4 h-4 mr-2" />
                   My Reservations
@@ -137,9 +137,9 @@ const Dashboard = () => {
                 <Calendar className="w-6 h-6 text-gold" />
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">My Reservations</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Add Reservations</h3>
             <p className="text-muted-foreground mb-4">
-              Manage your existing stall reservations
+              Add new stall reservations
             </p>
             <Link to="/reservations">
               <Button variant="bronze" className="w-full">

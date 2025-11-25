@@ -6,12 +6,14 @@ import com.bookfair.stallservice.exception.ResourceNotFoundException;
 import com.bookfair.stallservice.model.Stall;
 import com.bookfair.stallservice.repository.StallRepository;
 import com.bookfair.stallservice.service.StallService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 public class StallServiceImpl implements StallService {
@@ -100,5 +102,14 @@ public class StallServiceImpl implements StallService {
                 .locationX(dto.getLocationX())
                 .locationY(dto.getLocationY())
                 .build();
+    }
+
+    @Override
+    public void updateReservationStatus(Long stallId, Boolean isReserved) {
+        Stall stall = repository.findById(stallId)
+                .orElseThrow(() -> new ResourceNotFoundException("Stall not found with id: " + stallId));
+        stall.setIsReserved(isReserved);
+        repository.save(stall);
+        log.info("Stall {} reservation status updated to: {}", stallId, isReserved);
     }
 }

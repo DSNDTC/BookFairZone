@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import UserProfile from "./pages/UserProfile";
 import Genres from "./pages/Genres";
 import Reservations from "./pages/Reservations";
+import MyReservations from "./pages/MyReservations";
 import StallManagement from "./pages/StallManagement";
 import ReservationManagement from "./pages/ReservationManagement";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -85,14 +86,20 @@ const App = () => (
             }
           />
           <Route
+
             path="/profile"
             element={
               <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE']}>
                 <UserProfile />
               </ProtectedRoute>
+            }/>
+            path="/my-reservations"
+            element={
+              <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE']}>
+                <MyReservations />
+              </ProtectedRoute>
             }
           />
-
           <Route
             path="/stall-management"
             element={

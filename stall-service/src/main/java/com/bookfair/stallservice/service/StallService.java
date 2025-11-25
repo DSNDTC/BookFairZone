@@ -12,4 +12,5 @@ public interface StallService {
     StallDto update(Long id, StallDto dto);
     void delete(Long id);
     List<StallDto> updateLocations(List<StallLocationUpdateRequest> updates);
+    void updateReservationStatus(Long stallId, Boolean isReserved);
 }
