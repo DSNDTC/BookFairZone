@@ -21,9 +21,6 @@ public class StallDto {
     @PositiveOrZero(message = "price must be zero or positive")
     private Double price;
 
-    @NotNull(message = "vendorId is required")
-    private Long vendorId;
-
     private Boolean isReserved = false;
 
     private Integer locationX;
