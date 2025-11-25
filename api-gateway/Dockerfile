@@ -3,20 +3,32 @@ FROM gradle:8.4.0-jdk21 AS builder
 
 WORKDIR /workspace
 
-# Copy Gradle wrapper and settings
-COPY api-gateway/gradlew /workspace/
-COPY api-gateway/gradle/ /workspace/gradle/
-COPY api-gateway/settings.gradle /workspace/
-COPY api-gateway/build.gradle /workspace/
+# --- STEP 1: Build and Publish Shared Library ---
+# Copy library files
+COPY bookfair-contracts/build.gradle ./bookfair-contracts/
+COPY bookfair-contracts/src ./bookfair-contracts/src
 
-# Copy source code
-COPY api-gateway/src /workspace/src
+# Switch to library folder
+WORKDIR /workspace/bookfair-contracts
 
-# Make gradlew executable
-RUN chmod +x ./gradlew
+# Create temp settings and publish to local maven (inside the container)
+RUN echo "rootProject.name = 'bookfair-contracts'" > settings.gradle
+RUN gradle publishToMavenLocal --no-daemon
 
-# Build the application
-RUN ./gradlew bootJar --no-daemon
+# --- STEP 2: Build API Gateway ---
+# Switch to gateway folder
+WORKDIR /workspace/api-gateway
+
+# Copy Gateway build files
+COPY api-gateway/settings.gradle .
+COPY api-gateway/build.gradle .
+
+# Copy Gateway source
+COPY api-gateway/src ./src
+
+# Build the application using the GLOBAL gradle command
+# (No need for ./gradlew or chmod)
+RUN gradle bootJar --no-daemon
 
 # STAGE 2: Create final lightweight Java 21 runtime image
 FROM eclipse-temurin:21-jre-alpine
@@ -26,15 +38,15 @@ RUN apk add --no-cache curl
 
 WORKDIR /app
 
-# API Gateway runs on port 8080
-EXPOSE 9090
+# Ensure this matches your application.properties server.port
+EXPOSE 8090
 
-# Copy the built JAR from the 'builder' stage
-COPY --from=builder /workspace/build/libs/*.jar app.jar
+# Copy the built JAR from the correct path
+COPY --from=builder /workspace/api-gateway/build/libs/*.jar app.jar
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:9090/actuator/health || exit 1
+  CMD curl -f http://localhost:8090/actuator/health || exit 1
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

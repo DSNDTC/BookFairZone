@@ -1,5 +1,3 @@
-# security-service/Dockerfile
-
 # ---- Build stage ----
 FROM gradle:8.4.0-jdk21 AS builder
 WORKDIR /workspace
@@ -28,8 +26,9 @@ ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75 -Djava.security.egd=file:/de
 # Note the path: it is now inside the subfolder 'security-service'
 COPY --from=builder /workspace/security-service/build/libs/*.jar /app/app.jar
 
-EXPOSE 8096
+EXPOSE 8094
 ENV SPRING_PROFILES_ACTIVE=default
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "-f", "http://localhost:8096/actuator/health" ]
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "-f", "http://localhost:8094/actuator/health" ]
 
 ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]
+

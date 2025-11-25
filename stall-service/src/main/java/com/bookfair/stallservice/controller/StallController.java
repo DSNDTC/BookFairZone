@@ -1,6 +1,7 @@
 package com.bookfair.stallservice.controller;
 
 import com.bookfair.stallservice.dto.StallDto;
+import com.bookfair.stallservice.dto.StallLocationUpdateRequest;
 import com.bookfair.stallservice.service.StallService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -44,5 +45,10 @@ public class StallController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         stallService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/locations")
+    public ResponseEntity<List<StallDto>> updateLocations(@RequestBody @Valid List<@Valid StallLocationUpdateRequest> updates) {
+        return ResponseEntity.ok(stallService.updateLocations(updates));
     }
 }

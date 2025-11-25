@@ -1,6 +1,7 @@
 package com.bookfair.stallservice.service.impl;
 
 import com.bookfair.stallservice.dto.StallDto;
+import com.bookfair.stallservice.dto.StallLocationUpdateRequest;
 import com.bookfair.stallservice.exception.ResourceNotFoundException;
 import com.bookfair.stallservice.model.Stall;
 import com.bookfair.stallservice.repository.StallRepository;
@@ -46,7 +47,6 @@ public class StallServiceImpl implements StallService {
         existing.setCode(dto.getCode());
         existing.setSize(dto.getSize());
         existing.setPrice(dto.getPrice());
-        existing.setVendorId(dto.getVendorId());
         existing.setIsReserved(dto.getIsReserved() != null ? dto.getIsReserved() : existing.getIsReserved());
         existing.setLocationX(dto.getLocationX());
         existing.setLocationY(dto.getLocationY());
@@ -60,13 +60,30 @@ public class StallServiceImpl implements StallService {
         repository.delete(existing);
     }
 
+    @Override
+    public List<StallDto> updateLocations(List<StallLocationUpdateRequest> updates) {
+        if (updates == null || updates.isEmpty()) {
+            return List.of();
+        }
+
+        return updates.stream()
+                .map(update -> {
+                    Stall stall = repository.findById(update.getId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Stall not found with id: " + update.getId()));
+                    stall.setLocationX(update.getLocationX());
+                    stall.setLocationY(update.getLocationY());
+                    return repository.save(stall);
+                })
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     private StallDto toDto(Stall s) {
         return StallDto.builder()
                 .id(s.getId())
                 .code(s.getCode())
                 .size(s.getSize())
                 .price(s.getPrice())
-                .vendorId(s.getVendorId())
                 .isReserved(s.getIsReserved())
                 .locationX(s.getLocationX())
                 .locationY(s.getLocationY())
@@ -79,7 +96,6 @@ public class StallServiceImpl implements StallService {
                 .code(dto.getCode())
                 .size(dto.getSize())
                 .price(dto.getPrice())
-                .vendorId(dto.getVendorId())
                 .isReserved(dto.getIsReserved() != null ? dto.getIsReserved() : false)
                 .locationX(dto.getLocationX())
                 .locationY(dto.getLocationY())

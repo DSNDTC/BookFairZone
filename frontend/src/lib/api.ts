@@ -2,6 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosE
 
 // Base URL for the security service
 const SECURITY_SERVICE_URL = import.meta.env.VITE_SECURITY_SERVICE_URL || 'http://localhost:8082';
+const STALL_SERVICE_URL = import.meta.env.VITE_STALL_SERVICE_URL || 'http://localhost:8075';
 
 // Create axios instance with base config
 const api: AxiosInstance = axios.create({
@@ -175,6 +176,50 @@ const parseJwt = (token: string): any => {
     console.error('Error parsing JWT:', e);
     return null;
   }
+};
+
+export interface StallResponse {
+  id: number;
+  code: string;
+  size: 'SMALL' | 'MEDIUM' | 'LARGE';
+  price: number | string;
+  isReserved: boolean;
+  locationX?: number | string;
+  locationY?: number | string;
+}
+
+export interface StallCreatePayload {
+  code: string;
+  size: string;
+  price: number | string;
+  isReserved: boolean;
+  locationX: number | string;
+  locationY: number | string;
+}
+
+export interface StallLocationUpdatePayload {
+  id: number;
+  locationX: number;
+  locationY: number;
+}
+
+export const stallApi = {
+  async fetchAll(): Promise<StallResponse[]> {
+    const res = await api.get(`${STALL_SERVICE_URL}/api/stalls`);
+    return res.data;
+  },
+  async create(payload: StallCreatePayload): Promise<StallResponse> {
+    const res = await api.post(`${STALL_SERVICE_URL}/api/stalls`, payload);
+    return res.data;
+  },
+  async update(id: number | string, payload: StallCreatePayload): Promise<StallResponse> {
+    const res = await api.put(`${STALL_SERVICE_URL}/api/stalls/${id}`, payload);
+    return res.data;
+  },
+  async updateLocations(payload: StallLocationUpdatePayload[]): Promise<unknown> {
+    const res = await api.patch(`${STALL_SERVICE_URL}/api/stalls/locations`, payload);
+    return res.data;
+  },
 };
 
 export default api;

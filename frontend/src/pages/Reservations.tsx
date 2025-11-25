@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { BookOpen, ArrowLeft, MapPin, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { EditableVenueMap, Stall as MapStall } from "@/components/EditableVenueMap";
 import { NotificationBell } from "@/components/NotificationBell";
+import { stallApi } from "@/lib/api";
 
 type StallSize = "small" | "medium" | "large";
 type StallStatus = "available" | "reserved" | "selected";
@@ -37,81 +38,48 @@ const Reservations = () => {
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: "1", title: "Welcome", message: "Select stalls to make a reservation", time: "Just now", read: false },
   ]);
-  const [stalls, setStalls] = useState<Stall[]>([
-    // Section A - Large stalls (Top Left)
-    { id: "1", name: "A1", size: "large", status: "available", price: 50000, x: 60, y: 150, width: 150, height: 90 },
-    { id: "2", name: "A2", size: "large", status: "reserved", price: 50000, x: 220, y: 150, width: 150, height: 90 },
-    { id: "3", name: "A3", size: "large", status: "available", price: 50000, x: 380, y: 150, width: 150, height: 90 },
-    
-    // Section B - Large stalls (Top Right)
-    { id: "4", name: "B1", size: "large", status: "available", price: 50000, x: 650, y: 150, width: 150, height: 90 },
-    { id: "5", name: "B2", size: "large", status: "available", price: 50000, x: 810, y: 150, width: 150, height: 90 },
-    { id: "6", name: "B3", size: "large", status: "reserved", price: 50000, x: 970, y: 150, width: 150, height: 90 },
-    
-    // Section C - Medium stalls (Middle Left Top)
-    { id: "7", name: "C1", size: "medium", status: "available", price: 35000, x: 60, y: 270, width: 120, height: 70 },
-    { id: "8", name: "C2", size: "medium", status: "available", price: 35000, x: 190, y: 270, width: 120, height: 70 },
-    { id: "9", name: "C3", size: "medium", status: "reserved", price: 35000, x: 320, y: 270, width: 120, height: 70 },
-    { id: "10", name: "C4", size: "medium", status: "available", price: 35000, x: 450, y: 270, width: 120, height: 70 },
-    
-    // Section D - Medium stalls (Middle Right Top)
-    { id: "11", name: "D1", size: "medium", status: "available", price: 35000, x: 650, y: 270, width: 120, height: 70 },
-    { id: "12", name: "D2", size: "medium", status: "available", price: 35000, x: 780, y: 270, width: 120, height: 70 },
-    { id: "13", name: "D3", size: "medium", status: "available", price: 35000, x: 910, y: 270, width: 120, height: 70 },
-    { id: "14", name: "D4", size: "medium", status: "reserved", price: 35000, x: 1040, y: 270, width: 120, height: 70 },
-    
-    // Section C - Medium stalls (Middle Left Bottom)
-    { id: "15", name: "C5", size: "medium", status: "available", price: 35000, x: 60, y: 360, width: 120, height: 70 },
-    { id: "16", name: "C6", size: "medium", status: "available", price: 35000, x: 190, y: 360, width: 120, height: 70 },
-    { id: "17", name: "C7", size: "medium", status: "available", price: 35000, x: 320, y: 360, width: 120, height: 70 },
-    { id: "18", name: "C8", size: "medium", status: "available", price: 35000, x: 450, y: 360, width: 120, height: 70 },
-    
-    // Section D - Medium stalls (Middle Right Bottom)
-    { id: "19", name: "D5", size: "medium", status: "available", price: 35000, x: 650, y: 360, width: 120, height: 70 },
-    { id: "20", name: "D6", size: "medium", status: "reserved", price: 35000, x: 780, y: 360, width: 120, height: 70 },
-    { id: "21", name: "D7", size: "medium", status: "available", price: 35000, x: 910, y: 360, width: 120, height: 70 },
-    { id: "22", name: "D8", size: "medium", status: "available", price: 35000, x: 1040, y: 360, width: 120, height: 70 },
-    
-    // Section E - Small stalls (Bottom Left Top Row)
-    { id: "23", name: "E1", size: "small", status: "available", price: 20000, x: 60, y: 520, width: 90, height: 60 },
-    { id: "24", name: "E2", size: "small", status: "available", price: 20000, x: 160, y: 520, width: 90, height: 60 },
-    { id: "25", name: "E3", size: "small", status: "reserved", price: 20000, x: 260, y: 520, width: 90, height: 60 },
-    { id: "26", name: "E4", size: "small", status: "available", price: 20000, x: 360, y: 520, width: 90, height: 60 },
-    { id: "27", name: "E5", size: "small", status: "available", price: 20000, x: 460, y: 520, width: 90, height: 60 },
-    
-    // Section F - Small stalls (Bottom Right Top Row)
-    { id: "28", name: "F1", size: "small", status: "available", price: 20000, x: 650, y: 520, width: 90, height: 60 },
-    { id: "29", name: "F2", size: "small", status: "available", price: 20000, x: 750, y: 520, width: 90, height: 60 },
-    { id: "30", name: "F3", size: "small", status: "available", price: 20000, x: 850, y: 520, width: 90, height: 60 },
-    { id: "31", name: "F4", size: "small", status: "reserved", price: 20000, x: 950, y: 520, width: 90, height: 60 },
-    { id: "32", name: "F5", size: "small", status: "available", price: 20000, x: 1050, y: 520, width: 90, height: 60 },
-    
-    // Section E - Small stalls (Bottom Left Middle Row)
-    { id: "33", name: "E6", size: "small", status: "available", price: 20000, x: 60, y: 590, width: 90, height: 60 },
-    { id: "34", name: "E7", size: "small", status: "available", price: 20000, x: 160, y: 590, width: 90, height: 60 },
-    { id: "35", name: "E8", size: "small", status: "available", price: 20000, x: 260, y: 590, width: 90, height: 60 },
-    { id: "36", name: "E9", size: "small", status: "available", price: 20000, x: 360, y: 590, width: 90, height: 60 },
-    { id: "37", name: "E10", size: "small", status: "reserved", price: 20000, x: 460, y: 590, width: 90, height: 60 },
-    
-    // Section F - Small stalls (Bottom Right Middle Row)
-    { id: "38", name: "F6", size: "small", status: "available", price: 20000, x: 650, y: 590, width: 90, height: 60 },
-    { id: "39", name: "F7", size: "small", status: "available", price: 20000, x: 750, y: 590, width: 90, height: 60 },
-    { id: "40", name: "F8", size: "small", status: "available", price: 20000, x: 850, y: 590, width: 90, height: 60 },
-    { id: "41", name: "F9", size: "small", status: "available", price: 20000, x: 950, y: 590, width: 90, height: 60 },
-    { id: "42", name: "F10", size: "small", status: "available", price: 20000, x: 1050, y: 590, width: 90, height: 60 },
-    
-    // Section E - Small stalls (Bottom Left Bottom Row)
-    { id: "43", name: "E11", size: "small", status: "available", price: 20000, x: 60, y: 660, width: 90, height: 60 },
-    { id: "44", name: "E12", size: "small", status: "available", price: 20000, x: 160, y: 660, width: 90, height: 60 },
-    { id: "45", name: "E13", size: "small", status: "available", price: 20000, x: 260, y: 660, width: 90, height: 60 },
-    { id: "46", name: "E14", size: "small", status: "available", price: 20000, x: 360, y: 660, width: 90, height: 60 },
-    { id: "47", name: "E15", size: "small", status: "available", price: 20000, x: 460, y: 660, width: 90, height: 60 },
-    
-    // Section F - Small stalls (Bottom Right Bottom Row)
-    { id: "48", name: "F11", size: "small", status: "available", price: 20000, x: 650, y: 660, width: 90, height: 60 },
-    { id: "49", name: "F12", size: "small", status: "reserved", price: 20000, x: 750, y: 660, width: 90, height: 60 },
-    { id: "50", name: "F13", size: "small", status: "available", price: 20000, x: 850, y: 660, width: 90, height: 60 },
-  ]);
+  const [stalls, setStalls] = useState<Stall[]>([]);
+
+  const loadStalls = async () => {
+    try {
+      const data = await stallApi.fetchAll();
+      const mapSizeToDimensions = (size: StallSize) => {
+        switch (size) {
+          case "large":
+            return { width: 160, height: 100 };
+          case "medium":
+            return { width: 120, height: 80 };
+          default:
+            return { width: 80, height: 60 };
+        }
+      };
+
+      const mapped: Stall[] = data.map((s: any) => {
+        const size = (s.size || "SMALL").toLowerCase() as StallSize;
+        const { width, height } = mapSizeToDimensions(size);
+        return {
+          id: String(s.id),
+          name: s.code,
+          size,
+          status: s.isReserved ? "reserved" : "available",
+          price: Number(s.price),
+          x: Number(s.locationX) || 0,
+          y: Number(s.locationY) || 0,
+          width,
+          height,
+        };
+      });
+
+      setStalls(mapped);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load stalls");
+    }
+  };
+
+  useEffect(() => {
+    loadStalls();
+  }, []);
 
   const handleStallClick = (stall: Stall) => {
     if (stall.status === "reserved") return;

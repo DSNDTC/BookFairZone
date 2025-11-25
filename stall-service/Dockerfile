@@ -1,11 +1,11 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
-COPY stall-service/pom.xml .
-COPY stall-service/mvnw .
-COPY stall-service/mvnw.cmd .
-COPY stall-service/.mvn .mvn
+COPY pom.xml .
+COPY mvnw .
+COPY mvnw.cmd .
+COPY .mvn .mvn
 RUN mvn dependency:go-offline -B
-COPY stall-service/src ./src
+COPY src ./src
 RUN mvn -DskipTests clean package
 
 FROM eclipse-temurin:17-jre

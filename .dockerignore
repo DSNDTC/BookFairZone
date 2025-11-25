@@ -1,0 +1,12 @@
+# Ignore build outputs
+**/build
+**/target
+**/bin
+**/.gradle
+**/.idea
+**/.vscode
+*.iml
+
+# Ignore git
+.git
+.gitignore
