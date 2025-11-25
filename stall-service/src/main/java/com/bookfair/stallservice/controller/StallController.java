@@ -25,7 +25,7 @@ public class StallController {
     @PostMapping
     public ResponseEntity<StallDto> createStall(@RequestBody StallDto stallDto) {
         log.info("REST request to create Stall: {}", stallDto); 
-        StallDto created = stallService.createStall(stallDto);
+        StallDto created = stallService.create(stallDto);
         log.info("Successfully created Stall with ID: {}", created.getId()); 
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
