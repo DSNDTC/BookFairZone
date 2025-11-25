@@ -60,6 +60,7 @@ const EmployeePortal = () => {
 
   const handleClearAll = () => {
     setNotifications([]);
+  };
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
