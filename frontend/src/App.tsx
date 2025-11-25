@@ -92,7 +92,9 @@ const App = () => (
               <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE']}>
                 <UserProfile />
               </ProtectedRoute>
-            }/>
+            }
+          />
+          <Route
             path="/my-reservations"
             element={
               <ProtectedRoute allowedRoles={['PUBLISHER', 'USER', 'USER_ROLE']}>
