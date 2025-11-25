@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, Move, Plus, Minus, Maximize2 } from "lucide-react";
+import { ZoomIn, ZoomOut, Move, Plus, Minus, Maximize2, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,16 @@ export interface Stall {
 interface EditableVenueMapProps {
   stalls: Stall[];
   onStallsChange?: (stalls: Stall[]) => void;
+  onAddStall?: (stall: {
+    name: string;
+    size: StallSize;
+    price: number;
+    x: number;
+    y: number;
+  }) => Promise<void> | void;
+  onDeleteStall?: (id: string) => void;
+  // Called when the map UI requests a delete confirmation from parent (parent should show confirm dialog)
+  onRequestDelete?: (id: string) => void;
   editable?: boolean;
   selectedStalls?: string[];
   onStallClick?: (stall: Stall) => void;
@@ -40,6 +50,7 @@ const STALL_SIZES = {
 export const EditableVenueMap = ({ 
   stalls, 
   onStallsChange,
+  onAddStall,
   editable = false,
   selectedStalls = [],
   onStallClick 
@@ -59,6 +70,7 @@ export const EditableVenueMap = ({
     size: "medium" as StallSize,
     price: 35000,
   });
+  const [isCreatingStall, setIsCreatingStall] = useState(false);
   
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -126,6 +138,7 @@ export const EditableVenueMap = ({
   const handleStallMouseDown = (e: React.MouseEvent, stallId: string) => {
     if (!editable) return;
     e.stopPropagation();
+    e.preventDefault();
     
     const rect = svgRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -146,7 +159,24 @@ export const EditableVenueMap = ({
   const handleResizeMouseDown = (e: React.MouseEvent, stallId: string) => {
     if (!editable) return;
     e.stopPropagation();
+    e.preventDefault();
     setResizingStall(stallId);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, stallId: string) => {
+    if (!editable) return;
+    e.stopPropagation();
+    e.preventDefault();
+    // If parent wants to control confirmation, ask parent to show confirm dialog
+    if (typeof onRequestDelete === 'function') {
+      onRequestDelete(stallId);
+      return;
+    }
+    // Fallback: confirm here and call delete handler
+    if (!window.confirm('Delete this stall?')) return;
+    if (typeof onDeleteStall === 'function') {
+      onDeleteStall(stallId);
+    }
   };
 
   const handleSvgContextMenu = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -166,25 +196,49 @@ export const EditableVenueMap = ({
     }
   };
 
-  const handleAddStall = () => {
-    if (!onStallsChange || !newStallData.name.trim()) {
+  const handleAddStall = async () => {
+    if (!newStallData.name.trim()) {
       toast.error("Please enter a stall name");
       return;
     }
-    
+
     const sizeConfig = STALL_SIZES[newStallData.size];
-    const newStall: Stall = {
-      id: Date.now().toString(),
+    const stallPayload = {
       name: newStallData.name,
       size: newStallData.size,
       price: newStallData.price,
-      status: "available",
       x: newStallPosition.x,
       y: newStallPosition.y,
       width: sizeConfig.width,
       height: sizeConfig.height,
     };
-    
+
+    if (onAddStall) {
+      try {
+        setIsCreatingStall(true);
+        await onAddStall(stallPayload);
+        setShowAddStallDialog(false);
+        setNewStallData({ name: "", size: "medium", price: 35000 });
+      } catch (err) {
+        // parent handler should surface errors (e.g., toast)
+        console.error("Failed to add stall via parent handler", err);
+      } finally {
+        setIsCreatingStall(false);
+      }
+      return;
+    }
+
+    if (!onStallsChange) {
+      toast.error("Map is not editable");
+      return;
+    }
+
+    const newStall: Stall = {
+      id: Date.now().toString(),
+      status: "available",
+      ...stallPayload,
+    };
+
     onStallsChange([...stalls, newStall]);
     setShowAddStallDialog(false);
     setNewStallData({ name: "", size: "medium", price: 35000 });
@@ -244,6 +298,11 @@ export const EditableVenueMap = ({
             style={{ 
               minWidth: "1200px",
               minHeight: "900px",
+              // prevent browser text selection while dragging
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              MozUserSelect: "none",
+              msUserSelect: "none",
               transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
               transformOrigin: "0 0",
             }}
@@ -295,33 +354,33 @@ export const EditableVenueMap = ({
             <text x="600" y="242" textAnchor="middle" className="fill-foreground font-bold" fontSize="12">DESK</text>
 
             {/* Food Court */}
-            <rect x="150" y="820" width="200" height="60" fill="hsl(var(--bronze) / 0.2)" stroke="hsl(var(--bronze))" strokeWidth="2" rx="5" />
-            <text x="250" y="845" textAnchor="middle" className="fill-foreground font-semibold" fontSize="14">Food Court</text>
-            <text x="250" y="863" textAnchor="middle" className="fill-muted-foreground" fontSize="10">🍽️</text>
+            <rect x="450" y="820" width="120" height="60" fill="hsl(var(--bronze) / 0.2)" stroke="hsl(var(--bronze))" strokeWidth="2" rx="5" />
+            <text x="510" y="845" textAnchor="middle" className="fill-foreground font-semibold" fontSize="14">Food Court</text>
+            <text x="510" y="863" textAnchor="middle" className="fill-muted-foreground" fontSize="18">🍽️</text>
 
             {/* Restrooms */}
-            <rect x="850" y="820" width="200" height="60" fill="hsl(var(--muted) / 0.5)" stroke="hsl(var(--border))" strokeWidth="2" rx="5" />
-            <text x="950" y="845" textAnchor="middle" className="fill-foreground font-semibold" fontSize="14">Restrooms</text>
-            <text x="950" y="863" textAnchor="middle" className="fill-muted-foreground" fontSize="10">🚻</text>
+            <rect x="630" y="820" width="120" height="60" fill="hsl(var(--muted) / 0.5)" stroke="hsl(var(--border))" strokeWidth="2" rx="5" />
+            <text x="690" y="845" textAnchor="middle" className="fill-foreground font-semibold" fontSize="14">Restrooms</text>
+            <text x="690" y="863" textAnchor="middle" className="fill-muted-foreground" fontSize="18">🚻</text>
 
             {/* Section Labels - with background for visibility */}
             <rect x="200" y="115" width="100" height="25" fill="hsl(var(--background))" opacity="0.9" rx="4" />
-            <text x="250" y="133" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section A</text>
+            <text x="250" y="50" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section A</text>
             
             <rect x="800" y="115" width="100" height="25" fill="hsl(var(--background))" opacity="0.9" rx="4" />
-            <text x="850" y="133" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section B</text>
+            <text x="850" y="50" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section B</text>
             
             <rect x="200" y="335" width="100" height="25" fill="hsl(var(--background))" opacity="0.9" rx="4" />
-            <text x="250" y="353" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section C</text>
+            <text x="250" y="255" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section C</text>
             
             <rect x="800" y="335" width="100" height="25" fill="hsl(var(--background))" opacity="0.9" rx="4" />
-            <text x="850" y="353" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section D</text>
+            <text x="850" y="255" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section D</text>
             
             <rect x="200" y="585" width="100" height="25" fill="hsl(var(--background))" opacity="0.9" rx="4" />
-            <text x="250" y="603" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section E</text>
+            <text x="250" y="505" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section E</text>
             
             <rect x="800" y="585" width="100" height="25" fill="hsl(var(--background))" opacity="0.9" rx="4" />
-            <text x="850" y="603" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section F</text>
+            <text x="850" y="505" textAnchor="middle" className="fill-navy font-serif font-bold" fontSize="20">Section F</text>
 
             {/* Stalls */}
             {stalls.map((stall) => {
@@ -426,16 +485,42 @@ export const EditableVenueMap = ({
 
                   {/* Resize handle */}
                   {editable && isHovered && (
-                    <circle
-                      cx={stall.x + stall.width}
-                      cy={stall.y + stall.height}
-                      r="8"
-                      fill="hsl(var(--bronze))"
-                      stroke="hsl(var(--bronze-dark))"
-                      strokeWidth="2"
-                      className="cursor-nwse-resize"
-                      onMouseDown={(e) => handleResizeMouseDown(e, stall.id)}
-                    />
+                    <>
+                      <circle
+                        cx={stall.x + stall.width}
+                        cy={stall.y + stall.height}
+                        r="8"
+                        fill="hsl(var(--bronze))"
+                        stroke="hsl(var(--bronze-dark))"
+                        strokeWidth="2"
+                        className="cursor-nwse-resize"
+                        onMouseDown={(e) => handleResizeMouseDown(e, stall.id)}
+                      />
+
+                      {/* Delete control (top-right) */}
+                      <g onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}>
+                        <circle
+                          cx={stall.x + stall.width - 10}
+                          cy={stall.y + 10}
+                          r="10"
+                          fill="hsl(var(--bronze))"
+                          stroke="hsl(var(--bronze-dark))"
+                          strokeWidth="1"
+                          className="cursor-pointer"
+                          onClick={(e) => handleDeleteClick(e, stall.id)}
+                        />
+                        <text
+                          x={stall.x + stall.width - 10}
+                          y={stall.y + 14}
+                          textAnchor="middle"
+                          className="fill-foreground font-bold"
+                          fontSize="12"
+                          pointerEvents="none"
+                        >
+                          ✖
+                        </text>
+                      </g>
+                    </>
                   )}
                 </g>
               );
@@ -508,7 +593,7 @@ export const EditableVenueMap = ({
             <Button variant="outline" onClick={() => setShowAddStallDialog(false)}>
               Cancel
             </Button>
-            <Button variant="elegant" onClick={handleAddStall}>
+            <Button variant="elegant" onClick={handleAddStall} disabled={isCreatingStall}>
               Add Stall
             </Button>
           </DialogFooter>

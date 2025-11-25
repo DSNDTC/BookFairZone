@@ -216,6 +216,10 @@ export const stallApi = {
     const res = await api.put(`${STALL_SERVICE_URL}/api/stalls/${id}`, payload);
     return res.data;
   },
+  async delete(id: number | string): Promise<unknown> {
+    const res = await api.delete(`${STALL_SERVICE_URL}/api/stalls/${id}`);
+    return res.data;
+  },
   async updateLocations(payload: StallLocationUpdatePayload[]): Promise<unknown> {
     const res = await api.patch(`${STALL_SERVICE_URL}/api/stalls/locations`, payload);
     return res.data;
