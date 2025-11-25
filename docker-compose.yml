@@ -241,7 +241,7 @@ services:
         SPRING_MAIL_HOST: ${MAIL_HOST}
         SPRING_MAIL_PORT: ${MAIL_PORT}
         SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
-        SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+        SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
         SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
         SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"      
       networks:
@@ -271,7 +271,8 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       # Your application properties
       SERVER_PORT: 8092
-      APP_KAFKA_TOPIC_NOTIFICATION: reservation-topic
+      APP_KAFKA_TOPIC_NOTIFICATION: reservation.confirmed.events
+      SPRING_KAFKA_CONSUMER_GROUP_ID: notification-service-group
       # Placeholders for your API keys
       SENDGRID_API_KEY: "YOUR_REAL_SENDGRID_API_KEY"
       SENDGRID_FROM_EMAIL: "your-verified-sender@example.com"

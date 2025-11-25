@@ -113,7 +113,7 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           <Card className="p-6 border-border shadow-[var(--shadow-elegant)] hover:shadow-[var(--shadow-book)] transition-all duration-300 group">
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 bg-burgundy/10 rounded-lg flex items-center justify-center group-hover:bg-burgundy/20 transition-colors">
@@ -144,6 +144,23 @@ const Dashboard = () => {
             <Link to="/reservations">
               <Button variant="bronze" className="w-full">
                 View Reservations
+              </Button>
+            </Link>
+          </Card>
+
+          <Card className="p-6 border-border shadow-[var(--shadow-elegant)] hover:shadow-[var(--shadow-book)] transition-all duration-300 group">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-brown/10 rounded-lg flex items-center justify-center group-hover:bg-brown/20 transition-colors">
+                <User className="w-6 h-6 text-brown" />
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Profile & Preferences</h3>
+            <p className="text-muted-foreground mb-4">
+              Update your contact details, business info, and communication preferences.
+            </p>
+            <Link to="/profile">
+              <Button variant="outline" className="w-full">
+                Manage Profile
               </Button>
             </Link>
           </Card>
