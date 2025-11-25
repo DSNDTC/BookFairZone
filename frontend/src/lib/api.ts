@@ -253,6 +253,14 @@ export const reservationApi = {
     const res = await api.get(`${API_GATEWAY_URL}/api/reservations`);
     return res.data;
   },
+  async confirmReservation(reservationId: number): Promise<ReservationResponse> {
+    const res = await api.post(`${API_GATEWAY_URL}/api/reservations/${reservationId}/confirm`);
+    return res.data;
+  },
+  async rejectReservation(reservationId: number): Promise<ReservationResponse> {
+    const res = await api.post(`${API_GATEWAY_URL}/api/reservations/${reservationId}/reject`);
+    return res.data;
+  },
 };
 
 export default api;

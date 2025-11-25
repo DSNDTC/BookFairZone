@@ -59,8 +59,8 @@ services:
 
   security-service:
     build:
-      context: ./security-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./security-service/Dockerfile
     container_name: security-service
     depends_on:
       db:

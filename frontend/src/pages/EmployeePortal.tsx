@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Search, Users, MapPin, TrendingUp, Filter, Settings, LogOut } from "lucide-react";
+import { BookOpen, Search, Users, MapPin, TrendingUp, Filter, Settings, LogOut, ClipboardList } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { NotificationBell } from "@/components/NotificationBell";
@@ -165,6 +165,12 @@ const EmployeePortal = () => {
                 onMarkAsRead={handleMarkAsRead}
                 onClearAll={handleClearAll}
               />
+              <Link to="/reservation-management">
+                <Button variant="outline" size="sm">
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Manage Reservations
+                </Button>
+              </Link>
               <Link to="/stall-management">
                 <Button variant="outline" size="sm">
                   <Settings className="w-4 h-4 mr-2" />

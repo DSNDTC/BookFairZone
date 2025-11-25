@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Genres from "./pages/Genres";
 import Reservations from "./pages/Reservations";
 import StallManagement from "./pages/StallManagement";
+import ReservationManagement from "./pages/ReservationManagement";
 import ProtectedRoute from "./components/ProtectedRoute";
 import authService from "./services/auth.service";
 
@@ -97,6 +98,14 @@ const App = () => (
             element={
               <ProtectedRoute allowedRoles={['ADMIN_ROLE', 'ADMIN']}>
                 <EmployeePortal />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reservation-management"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN_ROLE', 'ADMIN']}>
+                <ReservationManagement />
               </ProtectedRoute>
             }
           />
